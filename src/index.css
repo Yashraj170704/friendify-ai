@@ -36,9 +36,9 @@
     --radius: 0.5rem;
 
     /* Custom properties */
-    --background-gradient: linear-gradient(135deg, #F5F9FF 0%, #ECF5FF 100%);
+    --background-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     --avatar-glow: 0 0 30px rgba(74, 157, 255, 0.4);
-    --glass-background: rgba(255, 255, 255, 0.7);
+    --glass-background: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.18);
     --grid-size: 40px;
   }
@@ -75,7 +75,7 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-friend-surface backdrop-blur-md rounded-2xl border border-white/20 shadow-glass;
+    @apply bg-friend-surface/10 backdrop-blur-md rounded-2xl border border-white/10 shadow-glass;
   }
   
   .message-bubble {
@@ -87,11 +87,12 @@
   }
   
   .ai-message {
-    @apply message-bubble glass-panel mr-auto;
+    @apply message-bubble glass-panel mr-auto text-white;
   }
   
   .grid-bg {
-    background-image: var(--futuristic-grid);
+    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), 
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: var(--grid-size) var(--grid-size);
   }
 
@@ -113,6 +114,19 @@
     transform: translate(-50%, -50%);
     background: radial-gradient(circle, rgba(74, 157, 255, 0.2) 0%, rgba(74, 157, 255, 0) 70%);
     z-index: -1;
+  }
+  
+  .neo-glow {
+    box-shadow: 0 0 15px rgba(74, 157, 255, 0.5), 
+                0 0 30px rgba(74, 157, 255, 0.3), 
+                0 0 45px rgba(74, 157, 255, 0.1);
+  }
+  
+  .cyber-grid {
+    background-image: 
+      linear-gradient(to right, rgba(74, 157, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(74, 157, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 }
 
@@ -155,4 +169,21 @@
     transform: scale(0.95);
     opacity: 0;
   }
+}
+
+.circular-progress {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.circular-progress svg {
+  transform: rotate(-90deg);
+}
+
+.circular-progress circle {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
 }
