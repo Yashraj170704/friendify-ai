@@ -1,13 +1,15 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mic, MicOff, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useChat } from '@/context/ChatContext';
 import { generateAIResponse } from '@/lib/emotions';
+import { toast } from 'sonner';
 
 const VoiceRecognition = () => {
   const { addMessage, userEmotion, isListening, startListening: contextStartListening, stopListening: contextStopListening } = useChat();
+  const [lastProcessedText, setLastProcessedText] = useState('');
   
   const { 
     isListening: isSpeechListening, 
@@ -17,14 +19,25 @@ const VoiceRecognition = () => {
     stopListening: speechStopListening 
   } = useSpeechRecognition({
     onResult: (text, emotion) => {
-      if (text.trim()) {
+      if (text.trim() && text !== lastProcessedText) {
+        // Update last processed text to avoid duplicates
+        setLastProcessedText(text);
+        
+        // Add user message
         addMessage(text, 'user', emotion);
         
-        // Generate AI response with a small delay
+        // Generate AI response
         setTimeout(() => {
           const response = generateAIResponse(text, emotion);
           addMessage(response.text, 'ai', response.emotion);
-        }, 1000);
+          
+          // Speak the response using browser's speech synthesis
+          const utterance = new SpeechSynthesisUtterance(response.text);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+          speechSynthesis.speak(utterance);
+        }, 800);
         
         contextStopListening();
       }
@@ -35,6 +48,10 @@ const VoiceRecognition = () => {
   useEffect(() => {
     if (isListening && !isSpeechListening) {
       speechStartListening();
+      toast.info("Listening...", {
+        description: "Speak clearly into your microphone",
+        duration: 2000,
+      });
     } else if (!isListening && isSpeechListening) {
       speechStopListening();
     }
@@ -45,6 +62,31 @@ const VoiceRecognition = () => {
       contextStopListening();
     } else {
       contextStartListening();
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (transcript.trim()) {
+      const trimmedTranscript = transcript.trim();
+      setLastProcessedText(trimmedTranscript);
+      
+      // Add user message
+      addMessage(trimmedTranscript, 'user', userEmotion);
+      
+      // Generate AI response
+      setTimeout(() => {
+        const response = generateAIResponse(trimmedTranscript, userEmotion);
+        addMessage(response.text, 'ai', response.emotion);
+        
+        // Speak the response using browser's speech synthesis
+        const utterance = new SpeechSynthesisUtterance(response.text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        speechSynthesis.speak(utterance);
+      }, 800);
+      
+      contextStopListening();
     }
   };
 
@@ -74,17 +116,7 @@ const VoiceRecognition = () => {
           variant="default"
           size="icon"
           className="rounded-full w-12 h-12 bg-friend hover:bg-friend-dark"
-          onClick={() => {
-            if (transcript.trim()) {
-              addMessage(transcript, 'user', userEmotion);
-              
-              // Generate AI response with a small delay
-              setTimeout(() => {
-                const response = generateAIResponse(transcript, userEmotion);
-                addMessage(response.text, 'ai', response.emotion);
-              }, 1000);
-            }
-          }}
+          onClick={handleSendMessage}
           disabled={!transcript.trim()}
         >
           <Send className="h-5 w-5" />
