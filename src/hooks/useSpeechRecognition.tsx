@@ -21,6 +21,7 @@ export function useSpeechRecognition({
   // Check if browser supports speech recognition
   const recognition = useCallback(() => {
     if (typeof window !== 'undefined') {
+      // Use the interface we defined
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (SpeechRecognition) {
