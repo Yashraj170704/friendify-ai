@@ -9,9 +9,15 @@ import { toast } from 'sonner';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
 const VoiceRecognition = () => {
-  const { addMessage, userEmotion, isListening, startListening: contextStartListening, stopListening: contextStopListening } = useChat();
+  const { 
+    addMessage, 
+    userEmotion, 
+    isListening, 
+    startListening: contextStartListening, 
+    stopListening: contextStopListening 
+  } = useChat();
   const [lastProcessedText, setLastProcessedText] = useState('');
-  const [microphoneStatus, setMicrophoneStatus] = useState<'ready' | 'checking' | 'error'>('ready');
+  const [microphoneStatus, setMicrophoneStatus] = useState<'ready' | 'checking' | 'error'>('checking');
   
   // Initialize speech synthesis
   const speech = useSpeechSynthesis({
@@ -23,6 +29,34 @@ const VoiceRecognition = () => {
     }
   });
   
+  // Handle speech recognition results
+  const handleSpeechResult = (text: string, emotion: Emotion) => {
+    console.log('Speech recognized, processing:', text);
+    if (text.trim() && text !== lastProcessedText) {
+      // Update last processed text to avoid duplicates
+      setLastProcessedText(text);
+      
+      // Add user message with combined emotion from face and voice
+      // Prioritize facial emotion if available, otherwise use voice emotion
+      const combinedEmotion = userEmotion !== 'neutral' ? userEmotion : emotion;
+      console.log('Combined emotion (face + voice):', combinedEmotion);
+      
+      // Add user message
+      addMessage(text, 'user', combinedEmotion);
+      
+      // Generate AI response based on combined emotion
+      setTimeout(() => {
+        const response = generateAIResponse(text, combinedEmotion);
+        addMessage(response.text, 'ai', response.emotion);
+        
+        // Speak the response using our speech hook
+        speech.speak(response.text, response.emotion);
+      }, 800);
+      
+      contextStopListening();
+    }
+  };
+  
   const { 
     isListening: isSpeechListening, 
     transcript, 
@@ -30,27 +64,8 @@ const VoiceRecognition = () => {
     startListening: speechStartListening, 
     stopListening: speechStopListening 
   } = useSpeechRecognition({
-    onResult: (text, emotion) => {
-      console.log('Speech recognized, processing:', text);
-      if (text.trim() && text !== lastProcessedText) {
-        // Update last processed text to avoid duplicates
-        setLastProcessedText(text);
-        
-        // Add user message
-        addMessage(text, 'user', emotion);
-        
-        // Generate AI response
-        setTimeout(() => {
-          const response = generateAIResponse(text, emotion);
-          addMessage(response.text, 'ai', response.emotion);
-          
-          // Speak the response using our speech hook
-          speech.speak(response.text, response.emotion);
-        }, 800);
-        
-        contextStopListening();
-      }
-    }
+    onResult: handleSpeechResult,
+    continuous: false
   });
 
   // Check microphone access on component mount
@@ -58,10 +73,17 @@ const VoiceRecognition = () => {
     const checkMicrophoneAccess = async () => {
       try {
         setMicrophoneStatus('checking');
+        console.log('Checking microphone access...');
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
         setMicrophoneStatus('ready');
+        console.log('Microphone access granted');
+        
+        // Auto-start listening on initial load
+        setTimeout(() => {
+          contextStartListening();
+        }, 1000);
       } catch (err) {
         console.error('Microphone access error:', err);
         setMicrophoneStatus('error');
@@ -73,18 +95,18 @@ const VoiceRecognition = () => {
     };
     
     checkMicrophoneAccess();
-  }, []);
+  }, [contextStartListening]);
 
   // Start/stop listening when context state changes
   useEffect(() => {
-    if (isListening && !isSpeechListening) {
+    if (isListening && !isSpeechListening && microphoneStatus === 'ready') {
       console.log('Starting speech recognition from context change');
       speechStartListening();
     } else if (!isListening && isSpeechListening) {
       console.log('Stopping speech recognition from context change');
       speechStopListening();
     }
-  }, [isListening, isSpeechListening, speechStartListening, speechStopListening]);
+  }, [isListening, isSpeechListening, speechStartListening, speechStopListening, microphoneStatus]);
 
   const handleMicToggle = () => {
     console.log('Mic button clicked, current state:', isListening);
@@ -109,12 +131,16 @@ const VoiceRecognition = () => {
       console.log('Sending message:', trimmedTranscript);
       setLastProcessedText(trimmedTranscript);
       
-      // Add user message
-      addMessage(trimmedTranscript, 'user', userEmotion);
+      // Use combined emotion from face and voice
+      const combinedEmotion = userEmotion !== 'neutral' ? userEmotion : 
+                             detectEmotionFromText(trimmedTranscript);
       
-      // Generate AI response
+      // Add user message
+      addMessage(trimmedTranscript, 'user', combinedEmotion);
+      
+      // Generate AI response based on combined emotion
       setTimeout(() => {
-        const response = generateAIResponse(trimmedTranscript, userEmotion);
+        const response = generateAIResponse(trimmedTranscript, combinedEmotion);
         addMessage(response.text, 'ai', response.emotion);
         
         // Speak the response using our speech hook
@@ -140,7 +166,7 @@ const VoiceRecognition = () => {
             microphoneStatus === 'error' 
               ? 'bg-destructive text-white' 
               : isListening 
-                ? 'bg-primary text-white' 
+                ? 'bg-primary text-white animate-pulse' 
                 : 'bg-secondary'
           }`}
         >
@@ -156,11 +182,14 @@ const VoiceRecognition = () => {
         <div className="flex-1 relative">
           <div className="h-12 flex items-center px-4 rounded-lg bg-white/50 text-foreground/80">
             {isListening ? (
-              transcript ? transcript : "Listening..."
+              <div className="flex items-center">
+                <span className="animate-pulse mr-2">●</span>
+                {transcript ? transcript : "Listening..."}
+              </div>
             ) : (
               microphoneStatus === 'error' 
                 ? "Microphone access required" 
-                : "Press the microphone to speak"
+                : transcript || "Press the microphone to speak"
             )}
           </div>
         </div>
@@ -197,5 +226,8 @@ const VoiceRecognition = () => {
     </div>
   );
 };
+
+import { detectEmotionFromText } from '@/lib/emotions';
+import type { Emotion } from '@/context/ChatContext';
 
 export default VoiceRecognition;

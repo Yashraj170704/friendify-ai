@@ -47,7 +47,7 @@ const ChatInterface = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="md:col-span-2 glass-panel p-4 rounded-2xl flex flex-col neo-glow tech-scanline">
+        <div className="md:col-span-1 glass-panel p-4 rounded-2xl flex flex-col neo-glow tech-scanline">
           <motion.h2 
             className="text-xl font-medium mb-2 text-center text-white flex justify-center items-center"
             initial={{ opacity: 0 }}
@@ -82,29 +82,31 @@ const ChatInterface = () => {
           </div>
         </div>
         
-        <div className="md:col-span-1">
-          <EmotionAnalyzer />
-        </div>
-      </div>
-      
-      <div className="flex-1 glass-panel p-4 rounded-2xl mb-4 overflow-hidden flex flex-col neo-glow">
-        <div className="flex-1 overflow-y-auto pr-2">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-blue-200">
-              <Sparkles className="h-8 w-8 text-blue-400 mb-2" />
-              <p className="text-center mb-2">No messages yet</p>
-              <p className="text-sm text-center">
-                Start speaking to begin a conversation with your AI friend
-              </p>
+        <div className="md:col-span-2">
+          <div className="grid grid-cols-1 gap-4 h-full">
+            <EmotionAnalyzer />
+            
+            <div className="glass-panel p-4 rounded-2xl overflow-hidden flex flex-col neo-glow h-64 md:h-auto">
+              <div className="flex-1 overflow-y-auto pr-2 max-h-[400px]">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-blue-200">
+                    <Sparkles className="h-8 w-8 text-blue-400 mb-2" />
+                    <p className="text-center mb-2">No messages yet</p>
+                    <p className="text-sm text-center">
+                      Start speaking to begin a conversation with your AI friend
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-4 py-4">
+                    {messages.map((message) => (
+                      <MessageBubble key={message.id} message={message} />
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col space-y-4 py-4">
-              {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+          </div>
         </div>
       </div>
       

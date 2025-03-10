@@ -4,6 +4,48 @@ import type { Emotion } from '../context/ChatContext';
 import { detectEmotionFromText } from '../lib/emotions';
 import { toast } from 'sonner';
 
+// Define the browser's SpeechRecognition interface
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: { transcript: string };
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult;
+  length: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+// Extend the Window interface
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
+
 interface UseSpeechRecognitionOptions {
   onResult?: (text: string, emotion: Emotion) => void;
   onEnd?: () => void;
@@ -19,6 +61,8 @@ export function useSpeechRecognition({
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   // Check if browser supports speech recognition
   const initRecognition = useCallback(() => {
@@ -28,6 +72,7 @@ export function useSpeechRecognition({
       
       if (SpeechRecognition) {
         try {
+          console.log('Initializing speech recognition...');
           const recognition = new SpeechRecognition();
           recognition.continuous = continuous;
           recognition.interimResults = true;
@@ -46,6 +91,7 @@ export function useSpeechRecognition({
           return null;
         }
       } else {
+        console.error('Speech recognition not supported by this browser');
         setError('Speech recognition is not supported in this browser.');
         toast.error('Speech recognition not supported', {
           description: 'Your browser does not support speech recognition. Please try Chrome or Edge.',
@@ -58,18 +104,21 @@ export function useSpeechRecognition({
 
   // Start listening
   const startListening = useCallback(() => {
+    console.log('Starting speech recognition...');
     // Cancel any existing recognition first
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
+        console.log('Stopped previous recognition instance');
       } catch (e) {
-        console.log('Stopping previous recognition instance');
+        console.log('Error stopping previous recognition instance:', e);
       }
     }
     
     const recognitionInstance = initRecognition();
     
     if (!recognitionInstance) {
+      console.error('Failed to initialize recognition instance');
       return;
     }
 
@@ -78,7 +127,14 @@ export function useSpeechRecognition({
     
     try {
       // Set up event listeners before starting
+      recognitionInstance.onstart = () => {
+        console.log('Speech recognition started successfully');
+        setIsListening(true);
+        setError(null);
+      };
+      
       recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+        console.log('Speech recognition result received');
         let currentTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -93,33 +149,52 @@ export function useSpeechRecognition({
           
           if (onResult) {
             const detectedEmotion = detectEmotionFromText(currentTranscript);
+            console.log('Emotion detected from speech:', detectedEmotion);
             onResult(currentTranscript, detectedEmotion);
           }
         }
       };
       
       recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('Speech recognition error:', event.error, event.message);
         setError(`Error: ${event.error}`);
-        setIsListening(false);
         
         // Show toast for user feedback
         toast.error('Speech recognition error', {
           description: `Error: ${event.error}. Please try again.`,
         });
+        
+        // Auto-retry for certain errors if we haven't exceeded max retries
+        if (['network', 'service-not-allowed'].includes(event.error) && retryCountRef.current < maxRetries) {
+          retryCountRef.current++;
+          toast.info('Retrying speech recognition...', {
+            description: `Attempt ${retryCountRef.current} of ${maxRetries}`,
+          });
+          
+          setTimeout(() => {
+            startListening();
+          }, 1000);
+        } else {
+          setIsListening(false);
+        }
       };
       
       recognitionInstance.onend = () => {
         console.log('Speech recognition ended');
         setIsListening(false);
-        if (onEnd) onEnd();
+        
+        // If continuous is true and no error, restart
+        if (continuous && !error && retryCountRef.current < maxRetries) {
+          console.log('Continuous mode active, restarting speech recognition');
+          startListening();
+        } else {
+          if (onEnd) onEnd();
+        }
       };
       
       // Start recognition
       recognitionInstance.start();
-      setIsListening(true);
-      setError(null);
-      console.log('Speech recognition started');
+      console.log('Speech recognition start command issued');
       
       // Show toast for user feedback
       toast.info('Listening...', {
@@ -136,18 +211,21 @@ export function useSpeechRecognition({
         description: 'Please check microphone permissions and try again.',
       });
     }
-  }, [initRecognition, onResult, onEnd]);
+  }, [initRecognition, onResult, onEnd, error, continuous]);
 
   // Stop listening
   const stopListening = useCallback(() => {
+    console.log('Stopping speech recognition...');
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-        console.log('Speech recognition stopped');
+        console.log('Speech recognition stopped successfully');
       } catch (err) {
         console.error('Error stopping speech recognition:', err);
       }
       setIsListening(false);
+      // Reset retry counter
+      retryCountRef.current = 0;
     }
   }, []);
 
@@ -157,11 +235,34 @@ export function useSpeechRecognition({
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) {
           console.log('Cleaning up speech recognition');
+        } catch (e) {
+          console.error('Error during cleanup:', e);
         }
       }
     };
+  }, []);
+
+  // Auto-start on mount if needed
+  useEffect(() => {
+    const checkMicrophoneAccess = async () => {
+      try {
+        console.log('Checking microphone access...');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+        console.log('Microphone access granted');
+      } catch (err) {
+        console.error('Microphone access error:', err);
+        setError('Microphone access denied. Please check browser permissions.');
+        toast.error('Microphone access required', {
+          description: 'Please allow microphone access to use voice recognition.',
+        });
+      }
+    };
+    
+    // Check microphone access on mount
+    checkMicrophoneAccess();
   }, []);
 
   return {
