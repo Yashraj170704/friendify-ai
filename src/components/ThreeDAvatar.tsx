@@ -5,6 +5,7 @@ import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import type { Emotion } from '@/context/ChatContext';
 import { Group } from 'three';
+import * as THREE from 'three';
 import { GLTF } from 'three-stdlib';
 
 // Define proper type for the GLTF result
