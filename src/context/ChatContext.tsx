@@ -20,12 +20,16 @@ interface ChatContextType {
   aiEmotion: Emotion;
   isListening: boolean;
   isProcessing: boolean;
+  isSpeaking: boolean;
+  selectedAvatar: string;
   addMessage: (content: string, sender: 'user' | 'ai', emotion?: Emotion) => void;
   setUserEmotion: (emotion: Emotion) => void;
   setAiEmotion: (emotion: Emotion) => void;
   startListening: () => void;
   stopListening: () => void;
   clearMessages: () => void;
+  setIsSpeaking: (speaking: boolean) => void;
+  setSelectedAvatar: (avatarId: string) => void;
 }
 
 // Create context with default values
@@ -35,12 +39,16 @@ const ChatContext = createContext<ChatContextType>({
   aiEmotion: 'neutral',
   isListening: false,
   isProcessing: false,
+  isSpeaking: false,
+  selectedAvatar: 'robot',
   addMessage: () => {},
   setUserEmotion: () => {},
   setAiEmotion: () => {},
   startListening: () => {},
   stopListening: () => {},
-  clearMessages: () => {}
+  clearMessages: () => {},
+  setIsSpeaking: () => {},
+  setSelectedAvatar: () => {}
 });
 
 // Custom hook to use the chat context
@@ -53,6 +61,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [aiEmotion, setAiEmotion] = useState<Emotion>('neutral');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState('robot');
 
   // Add a message to the chat
   const addMessage = useCallback((content: string, sender: 'user' | 'ai', emotion: Emotion = 'neutral') => {
@@ -94,12 +104,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     aiEmotion,
     isListening,
     isProcessing,
+    isSpeaking,
+    selectedAvatar,
     addMessage,
     setUserEmotion,
     setAiEmotion,
     startListening,
     stopListening,
-    clearMessages
+    clearMessages,
+    setIsSpeaking,
+    setSelectedAvatar
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
