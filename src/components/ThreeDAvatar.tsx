@@ -4,6 +4,15 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import type { Emotion } from '@/context/ChatContext';
+import { Group } from 'three';
+import { GLTF } from 'three-stdlib';
+
+// Define proper type for the GLTF result
+type GLTFResult = GLTF & {
+  nodes: Record<string, THREE.Object3D>;
+  materials: Record<string, THREE.Material>;
+  animations: THREE.AnimationClip[];
+};
 
 const avatarOptions = [
   { 
@@ -54,10 +63,17 @@ function AvatarModel({
   rotation = [0, 0, 0],
   emotion = 'neutral',
   speaking = false
+}: {
+  modelPath: string;
+  position?: [number, number, number];
+  scale?: number;
+  rotation?: [number, number, number];
+  emotion?: Emotion;
+  speaking?: boolean;
 }) {
-  const group = useRef();
-  const { scene, animations } = useGLTF(modelPath);
-  const { actions } = useAnimations(animations, group);
+  const groupRef = useRef<Group>(null);
+  const { scene, animations } = useGLTF(modelPath) as unknown as GLTFResult;
+  const { actions } = useAnimations(animations, groupRef);
   const [loaded, setLoaded] = useState(false);
   
   useEffect(() => {
@@ -79,14 +95,14 @@ function AvatarModel({
   
   // Speaking animation - simulated lip movement
   useFrame((state) => {
-    if (!group.current) return;
+    if (!groupRef.current) return;
     
     // Subtle head movement
-    group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
+    groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
     
     // If speaking, animate mouth/jaw if available
-    if (speaking && group.current.children[0]?.children) {
-      const jawBone = group.current.children[0].children.find(
+    if (speaking && groupRef.current.children[0]?.children) {
+      const jawBone = groupRef.current.children[0].children.find(
         child => child.name === 'jaw' || child.name.includes('mouth')
       );
       
@@ -96,8 +112,8 @@ function AvatarModel({
     }
     
     // Emotion handling - could adjust facial bones based on emotion
-    if (emotion !== 'neutral' && group.current.children[0]?.children) {
-      const eyeBones = group.current.children[0].children.filter(
+    if (emotion !== 'neutral' && groupRef.current.children[0]?.children) {
+      const eyeBones = groupRef.current.children[0].children.filter(
         child => child.name.includes('eye')
       );
       
@@ -114,7 +130,7 @@ function AvatarModel({
   });
 
   return (
-    <group ref={group} position={position} scale={scale} rotation={rotation}>
+    <group ref={groupRef} position={position} scale={scale} rotation={rotation}>
       {loaded ? (
         <primitive object={scene} />
       ) : (
@@ -160,9 +176,9 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
             
             <AvatarModel 
               modelPath={selectedAvatarData.model}
-              position={selectedAvatarData.position}
+              position={selectedAvatarData.position as [number, number, number]}
               scale={selectedAvatarData.scale}
-              rotation={selectedAvatarData.rotation}
+              rotation={selectedAvatarData.rotation as [number, number, number]}
               emotion={emotion}
               speaking={speaking}
             />
