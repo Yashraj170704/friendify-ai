@@ -56,6 +56,33 @@ export const getAvatarPlaceholder = (id: string) => {
   }
 };
 
+// Simple fallback 3D model when GLB files can't be loaded
+function FallbackModel({ 
+  color = '#4A9DFF',
+  scale = 1 
+}: { 
+  color?: string; 
+  scale?: number;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    // Simple animation for the fallback model
+    meshRef.current.rotation.y = state.clock.elapsedTime * 0.5;
+    meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime) * 0.2;
+  });
+  
+  return (
+    <group scale={scale}>
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial color={color} wireframe />
+      </mesh>
+    </group>
+  );
+}
+
 // Animation with lip sync effect
 function AvatarModel({ 
   modelPath, 
@@ -73,12 +100,23 @@ function AvatarModel({
   speaking?: boolean;
 }) {
   const groupRef = useRef<Group>(null);
-  const { scene, animations } = useGLTF(modelPath) as unknown as GLTFResult;
-  const { actions } = useAnimations(animations, groupRef);
+  const [modelError, setModelError] = useState(false);
+  let gltf: GLTFResult | null = null;
+  
+  try {
+    // Try to load the model but catch errors
+    gltf = useGLTF(modelPath) as GLTFResult;
+  } catch (error) {
+    console.error(`Error loading model ${modelPath}:`, error);
+    // If we couldn't load the model, we'll show a fallback
+    if (!modelError) setModelError(true);
+  }
+  
+  const { actions } = useAnimations(gltf?.animations || [], groupRef);
   const [loaded, setLoaded] = useState(false);
   
   useEffect(() => {
-    if (scene) {
+    if (gltf?.scene && !modelError) {
       setLoaded(true);
       
       // Start idle animation if available
@@ -92,7 +130,12 @@ function AvatarModel({
         actions.idle.fadeOut(0.5);
       }
     };
-  }, [scene, actions]);
+  }, [gltf, actions, modelError]);
+  
+  // If there was an error loading the model, show the fallback
+  if (modelError) {
+    return <FallbackModel color="#4A9DFF" scale={scale / 3} />;
+  }
   
   // Speaking animation - simulated lip movement
   useFrame((state) => {
@@ -132,8 +175,8 @@ function AvatarModel({
 
   return (
     <group ref={groupRef} position={position} scale={scale} rotation={rotation}>
-      {loaded ? (
-        <primitive object={scene} />
+      {loaded && gltf?.scene ? (
+        <primitive object={gltf.scene} />
       ) : (
         <mesh>
           <sphereGeometry args={[1, 16, 16]} />
@@ -143,6 +186,11 @@ function AvatarModel({
     </group>
   );
 }
+
+// Cleanup GLTF cache to prevent memory leaks
+useGLTF.preload('/models/robot_head.glb');
+useGLTF.preload('/models/female_head.glb');
+useGLTF.preload('/models/male_head.glb');
 
 interface ThreeDAvatarProps {
   emotion: Emotion;
@@ -175,14 +223,16 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
             <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
             <pointLight position={[-5, -5, -5]} intensity={1} />
             
-            <AvatarModel 
-              modelPath={selectedAvatarData.model}
-              position={selectedAvatarData.position as [number, number, number]}
-              scale={selectedAvatarData.scale}
-              rotation={selectedAvatarData.rotation as [number, number, number]}
-              emotion={emotion}
-              speaking={speaking}
-            />
+            <React.Suspense fallback={<FallbackModel />}>
+              <AvatarModel 
+                modelPath={selectedAvatarData.model}
+                position={selectedAvatarData.position as [number, number, number]}
+                scale={selectedAvatarData.scale}
+                rotation={selectedAvatarData.rotation as [number, number, number]}
+                emotion={emotion}
+                speaking={speaking}
+              />
+            </React.Suspense>
             
             <OrbitControls 
               enableZoom={false} 
