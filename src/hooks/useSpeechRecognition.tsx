@@ -28,13 +28,14 @@ export function useSpeechRecognition({
   // Check if browser supports speech recognition
   const initRecognition = useCallback(() => {
     if (typeof window !== 'undefined') {
-      // Use the globally defined SpeechRecognition interface
-      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognitionConstructor = 
+        window.SpeechRecognition || 
+        window.webkitSpeechRecognition;
       
-      if (SpeechRecognitionAPI) {
+      if (SpeechRecognitionConstructor) {
         try {
           console.log('Initializing speech recognition...');
-          const recognition = new SpeechRecognitionAPI();
+          const recognition = new SpeechRecognitionConstructor();
           recognition.continuous = continuous;
           recognition.interimResults = true;
           recognition.lang = 'en-US';
@@ -88,14 +89,13 @@ export function useSpeechRecognition({
     
     try {
       // Set up event listeners before starting
-      // Using function assignment instead of property access for compatibility
-      recognitionInstance.onstart = function() {
+      recognitionInstance.onstart = () => {
         console.log('Speech recognition started successfully');
         setIsListening(true);
         setError(null);
       };
       
-      recognitionInstance.onresult = function(event: SpeechRecognitionEvent) {
+      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
         console.log('Speech recognition result received');
         let currentTranscript = '';
         
@@ -117,7 +117,7 @@ export function useSpeechRecognition({
         }
       };
       
-      recognitionInstance.onerror = function(event: SpeechRecognitionErrorEvent) {
+      recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         setError(`Error: ${event.error}`);
         
@@ -141,7 +141,7 @@ export function useSpeechRecognition({
         }
       };
       
-      recognitionInstance.onend = function() {
+      recognitionInstance.onend = () => {
         console.log('Speech recognition ended');
         setIsListening(false);
         
