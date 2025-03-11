@@ -8,6 +8,7 @@ interface Window {
 
 interface SpeechRecognitionErrorEvent extends Event {
   error: string;
+  message?: string;
 }
 
 interface SpeechRecognitionEvent extends Event {
@@ -43,4 +44,5 @@ declare class SpeechRecognition extends EventTarget {
   onresult: ((event: SpeechRecognitionEvent) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
+  onstart: (() => void) | null;
 }

@@ -4,47 +4,8 @@ import type { Emotion } from '../context/ChatContext';
 import { detectEmotionFromText } from '../lib/emotions';
 import { toast } from 'sonner';
 
-// Define the browser's SpeechRecognition interface
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResult {
-  isFinal: boolean;
-  [index: number]: { transcript: string };
-}
-
-interface SpeechRecognitionResultList {
-  [index: number]: SpeechRecognitionResult;
-  length: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message: string;
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: SpeechRecognitionErrorEvent) => void;
-  onend: () => void;
-  onstart: () => void;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-}
-
-// Extend the Window interface
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
+// We'll use the global type definitions instead of redefining them here
+// This resolves the conflicts with the SpeechRecognition declarations
 
 interface UseSpeechRecognitionOptions {
   onResult?: (text: string, emotion: Emotion) => void;
@@ -67,13 +28,13 @@ export function useSpeechRecognition({
   // Check if browser supports speech recognition
   const initRecognition = useCallback(() => {
     if (typeof window !== 'undefined') {
-      // Use the interface we defined
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      // Use the globally defined SpeechRecognition interface
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       
-      if (SpeechRecognition) {
+      if (SpeechRecognitionAPI) {
         try {
           console.log('Initializing speech recognition...');
-          const recognition = new SpeechRecognition();
+          const recognition = new SpeechRecognitionAPI();
           recognition.continuous = continuous;
           recognition.interimResults = true;
           recognition.lang = 'en-US';
@@ -127,13 +88,14 @@ export function useSpeechRecognition({
     
     try {
       // Set up event listeners before starting
-      recognitionInstance.onstart = () => {
+      // Using function assignment instead of property access for compatibility
+      recognitionInstance.onstart = function() {
         console.log('Speech recognition started successfully');
         setIsListening(true);
         setError(null);
       };
       
-      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+      recognitionInstance.onresult = function(event: SpeechRecognitionEvent) {
         console.log('Speech recognition result received');
         let currentTranscript = '';
         
@@ -155,8 +117,8 @@ export function useSpeechRecognition({
         }
       };
       
-      recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error:', event.error, event.message);
+      recognitionInstance.onerror = function(event: SpeechRecognitionErrorEvent) {
+        console.error('Speech recognition error:', event.error);
         setError(`Error: ${event.error}`);
         
         // Show toast for user feedback
@@ -179,7 +141,7 @@ export function useSpeechRecognition({
         }
       };
       
-      recognitionInstance.onend = () => {
+      recognitionInstance.onend = function() {
         console.log('Speech recognition ended');
         setIsListening(false);
         
