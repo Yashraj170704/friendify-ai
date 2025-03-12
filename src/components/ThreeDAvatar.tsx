@@ -19,7 +19,7 @@ const avatarOptions = [
   { 
     id: 'stylized_male', 
     name: 'Alex', 
-    model: '/models/stylized_male.glb', // You'll need to obtain this 3D model
+    model: '/models/stylized_male.glb',
     position: [0, -0.7, 0],
     scale: 3,
     rotation: [0, 0, 0]
@@ -27,7 +27,7 @@ const avatarOptions = [
   { 
     id: 'stylized_female', 
     name: 'Sophia', 
-    model: '/models/stylized_female.glb', // You'll need to obtain this 3D model
+    model: '/models/stylized_female.glb',
     position: [0, -0.7, 0],
     scale: 3,
     rotation: [0, 0, 0]
@@ -58,14 +58,11 @@ export const getAvatarPlaceholder = (id: string) => {
 
 // Use the uploaded image as a fallback 
 const StylizedAvatarFallback = ({ id }: { id: string }) => {
-  const imageUrl = id.includes('male') 
-    ? '/lovable-uploads/420bbb98-bf8a-47bf-a0d9-c9575cd88890.png'
-    : '/placeholder.svg';
-    
+  // Use the image from lovable-uploads
   return (
     <div className="w-full h-full flex items-center justify-center">
       <img 
-        src={imageUrl} 
+        src="/lovable-uploads/420bbb98-bf8a-47bf-a0d9-c9575cd88890.png" 
         alt="AI Avatar" 
         className="object-cover max-h-full rounded-full"
       />
@@ -75,7 +72,7 @@ const StylizedAvatarFallback = ({ id }: { id: string }) => {
 
 // Simple fallback 3D model when GLB files can't be loaded
 function FallbackModel({ 
-  color = '#4A9DFF',
+  color = '#9b87f5',
   scale = 1 
 }: { 
   color?: string; 
@@ -116,7 +113,7 @@ function SafeAvatarModel(props: {
   
   // If we already know there's an error, render the fallback immediately
   if (hasError) {
-    return <FallbackModel color="#4A9DFF" scale={(props.scale || 3) / 3} />;
+    return <FallbackModel color="#9b87f5" scale={(props.scale || 3) / 3} />;
   }
   
   // If no error yet, try to render the real model with error boundary
@@ -125,7 +122,7 @@ function SafeAvatarModel(props: {
   } catch (error) {
     // This catch will only run on first render
     console.error("Error rendering avatar model:", error);
-    return <FallbackModel color="#4A9DFF" scale={(props.scale || 3) / 3} />;
+    return <FallbackModel color="#9b87f5" scale={(props.scale || 3) / 3} />;
   }
 }
 
@@ -232,7 +229,7 @@ function AvatarModel({
       ) : (
         <mesh>
           <sphereGeometry args={[1, 16, 16]} />
-          <meshStandardMaterial color="#4A9DFF" wireframe />
+          <meshStandardMaterial color="#9b87f5" wireframe />
         </mesh>
       )}
     </group>
@@ -255,27 +252,12 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
   showAvatarSelector = false
 }) => {
   const selectedAvatarData = avatarOptions.find(avatar => avatar.id === selectedAvatar) || avatarOptions[0];
-  const [modelLoadFailed, setModelLoadFailed] = useState(false);
+  const [modelLoadFailed, setModelLoadFailed] = useState(true); // Default to true to show the image by default
   
-  // Check if the 3D model exists
+  // Always show the image fallback for now
   useEffect(() => {
-    const checkModelExists = async () => {
-      try {
-        const response = await fetch(selectedAvatarData.model);
-        if (!response.ok) {
-          console.warn(`Model ${selectedAvatarData.model} not found, using fallback`);
-          setModelLoadFailed(true);
-        } else {
-          setModelLoadFailed(false);
-        }
-      } catch (err) {
-        console.error('Error checking model:', err);
-        setModelLoadFailed(true);
-      }
-    };
-    
-    checkModelExists();
-  }, [selectedAvatarData.model]);
+    setModelLoadFailed(true);
+  }, []);
   
   return (
     <div className="relative w-full">
@@ -317,10 +299,26 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
             </ErrorBoundary>
           )}
           
-          {/* Fallback in case 3D model doesn't load */}
-          <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-10 pointer-events-none">
-            {getAvatarPlaceholder(selectedAvatar)}
-          </div>
+          {/* Visual indicator for speaking state */}
+          {speaking && (
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+              <motion.div
+                animate={{ height: [3, 10, 3] }}
+                transition={{ repeat: Infinity, duration: 0.7 }}
+                className="w-1 bg-purple-500 rounded-full"
+              />
+              <motion.div
+                animate={{ height: [3, 15, 3] }}
+                transition={{ repeat: Infinity, duration: 0.8, delay: 0.1 }}
+                className="w-1 bg-purple-500 rounded-full"
+              />
+              <motion.div
+                animate={{ height: [3, 7, 3] }}
+                transition={{ repeat: Infinity, duration: 0.6 }}
+                className="w-1 bg-purple-500 rounded-full"
+              />
+            </div>
+          )}
         </motion.div>
       </div>
       
@@ -332,7 +330,7 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
               onClick={() => onAvatarChange && onAvatarChange(avatar.id)}
               className={`p-2 rounded-full transition-all ${
                 selectedAvatar === avatar.id 
-                  ? 'bg-friend ring-2 ring-white text-white scale-110' 
+                  ? 'bg-purple-500 ring-2 ring-white text-white scale-110' 
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
               aria-label={`Select ${avatar.name} avatar`}

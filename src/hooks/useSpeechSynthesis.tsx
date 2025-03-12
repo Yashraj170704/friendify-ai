@@ -29,8 +29,16 @@ export function useSpeechSynthesis({
   // Use a ref to track the current utterance
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   
+  // Check if speech synthesis is supported
+  const isSpeechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  
   // Load available voices
   useEffect(() => {
+    if (!isSpeechSupported) {
+      console.error('Speech synthesis not supported in this browser');
+      return;
+    }
+    
     const loadVoices = () => {
       try {
         const availableVoices = window.speechSynthesis.getVoices();
@@ -62,13 +70,31 @@ export function useSpeechSynthesis({
     }
     
     return () => {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (e) {
-        console.error('Error canceling speech synthesis:', e);
+      if (isSpeechSupported) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {
+          console.error('Error canceling speech synthesis:', e);
+        }
       }
     };
-  }, []);
+  }, [isSpeechSupported]);
+  
+  // Fix for Chrome speech synthesis bug
+  useEffect(() => {
+    if (!isSpeechSupported) return;
+    
+    // Chrome has a bug where it stops speaking after ~15 seconds
+    // This is a workaround that restarts the speech synthesis periodically
+    const intervalId = setInterval(() => {
+      if (isSpeaking && !isPaused && utteranceRef.current) {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }
+    }, 10000);
+    
+    return () => clearInterval(intervalId);
+  }, [isSpeaking, isPaused, isSpeechSupported]);
   
   // Adjust voice characteristics based on emotion
   const getVoiceSettings = (emotion: Emotion) => {
@@ -89,7 +115,7 @@ export function useSpeechSynthesis({
   // Speak function
   const speak = (text: string, emotion: Emotion = 'neutral') => {
     // Check if speech synthesis is supported
-    if (!window.speechSynthesis) {
+    if (!isSpeechSupported) {
       console.error('Speech synthesis not supported');
       toast.error('Speech synthesis not supported in this browser');
       if (onError) onError(new Error('Speech synthesis not supported'));
@@ -142,10 +168,28 @@ export function useSpeechSynthesis({
         setIsPaused(false);
         
         toast.error('Speech output failed', {
-          description: 'There was an issue with the voice response. Please try again.',
+          description: 'There was an issue with the voice response. Trying fallback method...',
         });
         
-        if (onError) onError(event);
+        // Try fallback method - sometimes using a different voice works
+        setTimeout(() => {
+          try {
+            const fallbackUtterance = new SpeechSynthesisUtterance(text);
+            // Try a different voice if available
+            if (voices.length > 0) {
+              const fallbackVoiceIndex = (voiceIndex + 1) % voices.length;
+              fallbackUtterance.voice = voices[fallbackVoiceIndex];
+              fallbackUtterance.volume = volume;
+              fallbackUtterance.rate = settings.rate;
+              fallbackUtterance.pitch = settings.pitch;
+              
+              window.speechSynthesis.speak(fallbackUtterance);
+            }
+          } catch (err) {
+            console.error('Fallback speech failed:', err);
+            if (onError) onError(event);
+          }
+        }, 500);
       };
       
       // Store the utterance in ref and state
@@ -175,7 +219,7 @@ export function useSpeechSynthesis({
   
   // Control functions
   const pause = () => {
-    if (isSpeaking && !isPaused) {
+    if (isSpeaking && !isPaused && isSpeechSupported) {
       try {
         window.speechSynthesis.pause();
         setIsPaused(true);
@@ -186,7 +230,7 @@ export function useSpeechSynthesis({
   };
   
   const resume = () => {
-    if (isSpeaking && isPaused) {
+    if (isSpeaking && isPaused && isSpeechSupported) {
       try {
         window.speechSynthesis.resume();
         setIsPaused(false);
@@ -197,12 +241,14 @@ export function useSpeechSynthesis({
   };
   
   const cancel = () => {
-    try {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      setIsPaused(false);
-    } catch (e) {
-      console.error('Error canceling speech:', e);
+    if (isSpeechSupported) {
+      try {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        setIsPaused(false);
+      } catch (e) {
+        console.error('Error canceling speech:', e);
+      }
     }
   };
   
@@ -223,5 +269,6 @@ export function useSpeechSynthesis({
     voices,
     voiceIndex,
     setVoice,
+    supported: isSpeechSupported
   };
 }

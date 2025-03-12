@@ -1,5 +1,5 @@
 
-# 3D Models for AI Friend
+# 3D Models for AI Assistant
 
 This directory should contain the following 3D model files:
 
@@ -7,7 +7,13 @@ This directory should contain the following 3D model files:
 2. `stylized_female.glb` - A stylized female character model with facial animation capabilities
 3. `robot_head.glb` - A futuristic robot head model with articulated jaw for speaking animations
 
-If these files are not present, the application will fall back to 2D images.
+## IMPORTANT NOTE
+
+The AI Assistant is currently using a 2D image fallback as shown in the preview. To use a 3D model, you need to:
+
+1. Obtain suitable 3D character models in GLB format
+2. Place them in this directory with the exact filenames above
+3. Set `modelLoadFailed` to `false` in src/components/ThreeDAvatar.tsx
 
 ## Getting 3D Models
 
@@ -23,8 +29,6 @@ Look for models that:
 3. Include basic facial animations if possible
 4. Have appropriate licensing for your use case
 
-Place the downloaded files in this directory with the exact filenames above.
+## Current Default
 
-## Default Fallback
-
-If 3D models aren't available, the app will use 2D images as fallbacks.
+The AI Assistant currently uses a stylized 2D image as the default appearance.
