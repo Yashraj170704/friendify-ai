@@ -35,6 +35,7 @@ interface SpeechRecognitionAlternative {
 }
 
 declare class SpeechRecognition extends EventTarget {
+  constructor();
   continuous: boolean;
   interimResults: boolean;
   lang: string;

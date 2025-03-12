@@ -4,9 +4,6 @@ import type { Emotion } from '../context/ChatContext';
 import { detectEmotionFromText } from '../lib/emotions';
 import { toast } from 'sonner';
 
-// We'll use the global type definitions instead of redefining them here
-// This resolves the conflicts with the SpeechRecognition declarations
-
 interface UseSpeechRecognitionOptions {
   onResult?: (text: string, emotion: Emotion) => void;
   onEnd?: () => void;

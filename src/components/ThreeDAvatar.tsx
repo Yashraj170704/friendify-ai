@@ -17,6 +17,22 @@ type GLTFResult = GLTF & {
 
 const avatarOptions = [
   { 
+    id: 'stylized_male', 
+    name: 'Alex', 
+    model: '/models/stylized_male.glb', // You'll need to obtain this 3D model
+    position: [0, -0.7, 0],
+    scale: 3,
+    rotation: [0, 0, 0]
+  },
+  { 
+    id: 'stylized_female', 
+    name: 'Sophia', 
+    model: '/models/stylized_female.glb', // You'll need to obtain this 3D model
+    position: [0, -0.7, 0],
+    scale: 3,
+    rotation: [0, 0, 0]
+  },
+  { 
     id: 'robot', 
     name: 'Robot', 
     model: '/models/robot_head.glb',
@@ -24,36 +40,37 @@ const avatarOptions = [
     scale: 2.5,
     rotation: [0, 0, 0]
   },
-  { 
-    id: 'female', 
-    name: 'Sophia', 
-    model: '/models/female_head.glb',
-    position: [0, -0.7, 0],
-    scale: 4,
-    rotation: [0, 0, 0]
-  },
-  { 
-    id: 'male', 
-    name: 'Alex', 
-    model: '/models/male_head.glb',
-    position: [0, -0.5, 0],
-    scale: 3,
-    rotation: [0, 0, 0]
-  },
 ];
 
 // Fallback placeholders in case models don't load
 export const getAvatarPlaceholder = (id: string) => {
   switch (id) {
+    case 'stylized_male':
+      return '👦';
+    case 'stylized_female':
+      return '👧';
     case 'robot':
       return '🤖';
-    case 'female':
-      return '👩';
-    case 'male':
-      return '👨';
     default:
-      return '🤖';
+      return '👦';
   }
+};
+
+// Use the uploaded image as a fallback 
+const StylizedAvatarFallback = ({ id }: { id: string }) => {
+  const imageUrl = id.includes('male') 
+    ? '/lovable-uploads/420bbb98-bf8a-47bf-a0d9-c9575cd88890.png'
+    : '/placeholder.svg';
+    
+  return (
+    <div className="w-full h-full flex items-center justify-center">
+      <img 
+        src={imageUrl} 
+        alt="AI Avatar" 
+        className="object-cover max-h-full rounded-full"
+      />
+    </div>
+  );
 };
 
 // Simple fallback 3D model when GLB files can't be loaded
@@ -91,6 +108,7 @@ function SafeAvatarModel(props: {
   rotation?: [number, number, number];
   emotion?: Emotion;
   speaking?: boolean;
+  avatarId: string;
 }) {
   // Instead of using try/catch inside the component function which can cause React hook issues,
   // we use error state that gets updated only on first render or when props change
@@ -119,7 +137,8 @@ function AvatarModel({
   rotation = [0, 0, 0],
   emotion = 'neutral',
   speaking = false,
-  onError
+  onError,
+  avatarId
 }: {
   modelPath: string;
   position?: [number, number, number];
@@ -128,6 +147,7 @@ function AvatarModel({
   emotion?: Emotion;
   speaking?: boolean;
   onError?: () => void;
+  avatarId: string;
 }) {
   const groupRef = useRef<Group>(null);
   const [loaded, setLoaded] = useState(false);
@@ -230,11 +250,32 @@ interface ThreeDAvatarProps {
 const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({ 
   emotion = 'neutral',
   speaking = false,
-  selectedAvatar = 'robot',
+  selectedAvatar = 'stylized_male', // Default to stylized male avatar
   onAvatarChange,
   showAvatarSelector = false
 }) => {
   const selectedAvatarData = avatarOptions.find(avatar => avatar.id === selectedAvatar) || avatarOptions[0];
+  const [modelLoadFailed, setModelLoadFailed] = useState(false);
+  
+  // Check if the 3D model exists
+  useEffect(() => {
+    const checkModelExists = async () => {
+      try {
+        const response = await fetch(selectedAvatarData.model);
+        if (!response.ok) {
+          console.warn(`Model ${selectedAvatarData.model} not found, using fallback`);
+          setModelLoadFailed(true);
+        } else {
+          setModelLoadFailed(false);
+        }
+      } catch (err) {
+        console.error('Error checking model:', err);
+        setModelLoadFailed(true);
+      }
+    };
+    
+    checkModelExists();
+  }, [selectedAvatarData.model]);
   
   return (
     <div className="relative w-full">
@@ -245,36 +286,36 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
           transition={{ duration: 1 }}
           className="w-full h-full tech-scanline"
         >
-          <ErrorBoundary fallback={
-            <div className="w-full h-full flex items-center justify-center bg-slate-900">
-              <div className="text-center">
-                <div className="text-6xl mb-4">{getAvatarPlaceholder(selectedAvatar)}</div>
-                <p className="text-blue-400">Unable to load 3D model</p>
-              </div>
-            </div>
-          }>
-            <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
-              <ambientLight intensity={0.5} />
-              <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
-              <pointLight position={[-5, -5, -5]} intensity={1} />
-              
-              <SafeAvatarModel 
-                modelPath={selectedAvatarData.model}
-                position={selectedAvatarData.position as [number, number, number]}
-                scale={selectedAvatarData.scale}
-                rotation={selectedAvatarData.rotation as [number, number, number]}
-                emotion={emotion}
-                speaking={speaking}
-              />
-              
-              <OrbitControls 
-                enableZoom={false} 
-                enablePan={false}
-                minPolarAngle={Math.PI / 2 - 0.5}
-                maxPolarAngle={Math.PI / 2 + 0.5}
-              />
-            </Canvas>
-          </ErrorBoundary>
+          {modelLoadFailed ? (
+            <StylizedAvatarFallback id={selectedAvatar} />
+          ) : (
+            <ErrorBoundary fallback={
+              <StylizedAvatarFallback id={selectedAvatar} />
+            }>
+              <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
+                <pointLight position={[-5, -5, -5]} intensity={1} />
+                
+                <SafeAvatarModel 
+                  modelPath={selectedAvatarData.model}
+                  position={selectedAvatarData.position as [number, number, number]}
+                  scale={selectedAvatarData.scale}
+                  rotation={selectedAvatarData.rotation as [number, number, number]}
+                  emotion={emotion}
+                  speaking={speaking}
+                  avatarId={selectedAvatar}
+                />
+                
+                <OrbitControls 
+                  enableZoom={false} 
+                  enablePan={false}
+                  minPolarAngle={Math.PI / 2 - 0.5}
+                  maxPolarAngle={Math.PI / 2 + 0.5}
+                />
+              </Canvas>
+            </ErrorBoundary>
+          )}
           
           {/* Fallback in case 3D model doesn't load */}
           <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-10 pointer-events-none">

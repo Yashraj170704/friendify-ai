@@ -82,12 +82,12 @@ const ChatInterface = () => {
           </div>
         </div>
         
-        <div className="md:col-span-2">
-          <div className="grid grid-cols-1 gap-4 h-full">
+        <div className="md:col-span-2 flex flex-col h-full">
+          <div className="grid grid-cols-1 gap-4 flex-grow">
             <EmotionAnalyzer />
             
-            <div className="glass-panel p-4 rounded-2xl overflow-hidden flex flex-col neo-glow h-64 md:h-auto">
-              <div className="flex-1 overflow-y-auto pr-2 max-h-[400px]">
+            <div className="glass-panel p-4 rounded-2xl overflow-hidden flex flex-col neo-glow h-96 md:h-[400px]">
+              <div className="flex-1 overflow-y-auto pr-2 pb-4 custom-scrollbar">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-blue-200">
                     <Sparkles className="h-8 w-8 text-blue-400 mb-2" />
@@ -97,7 +97,7 @@ const ChatInterface = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="flex flex-col space-y-4 py-4">
+                  <div className="flex flex-col space-y-4 py-2">
                     {messages.map((message) => (
                       <MessageBubble key={message.id} message={message} />
                     ))}
@@ -107,10 +107,10 @@ const ChatInterface = () => {
               </div>
             </div>
           </div>
+          
+          <VoiceRecognition />
         </div>
       </div>
-      
-      <VoiceRecognition />
     </div>
   );
 };

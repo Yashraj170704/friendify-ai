@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
-import type { Emotion } from '@/context/ChatContext';
+import type { Emotion } from '../context/ChatContext';
+import { toast } from 'sonner';
 
 interface UseSpeechSynthesisOptions {
   rate?: number;
@@ -31,18 +32,25 @@ export function useSpeechSynthesis({
   // Load available voices
   useEffect(() => {
     const loadVoices = () => {
-      const availableVoices = window.speechSynthesis.getVoices();
-      if (availableVoices.length > 0) {
-        setVoices(availableVoices);
-        
-        // Default to a female English voice if available
-        const femaleEnglishVoice = availableVoices.findIndex(
-          voice => voice.lang.includes('en') && voice.name.includes('Female')
-        );
-        
-        if (femaleEnglishVoice !== -1) {
-          setVoiceIndex(femaleEnglishVoice);
+      try {
+        const availableVoices = window.speechSynthesis.getVoices();
+        if (availableVoices.length > 0) {
+          console.log('Loaded voices:', availableVoices.length);
+          setVoices(availableVoices);
+          
+          // Default to a female English voice if available
+          const femaleEnglishVoice = availableVoices.findIndex(
+            voice => voice.lang.includes('en') && voice.name.includes('Female')
+          );
+          
+          if (femaleEnglishVoice !== -1) {
+            setVoiceIndex(femaleEnglishVoice);
+          }
+        } else {
+          console.warn('No voices available');
         }
+      } catch (err) {
+        console.error('Error loading voices:', err);
       }
     };
     
@@ -54,7 +62,11 @@ export function useSpeechSynthesis({
     }
     
     return () => {
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        console.error('Error canceling speech synthesis:', e);
+      }
     };
   }, []);
   
@@ -76,30 +88,49 @@ export function useSpeechSynthesis({
   
   // Speak function
   const speak = (text: string, emotion: Emotion = 'neutral') => {
+    // Check if speech synthesis is supported
+    if (!window.speechSynthesis) {
+      console.error('Speech synthesis not supported');
+      toast.error('Speech synthesis not supported in this browser');
+      if (onError) onError(new Error('Speech synthesis not supported'));
+      return;
+    }
+    
     // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {
+      console.error('Error canceling previous speech:', e);
+    }
     
     if (!text) return;
     
     try {
+      console.log('Starting speech synthesis:', text);
       const newUtterance = new SpeechSynthesisUtterance(text);
       
       // Apply emotion-based settings
       const settings = getVoiceSettings(emotion);
       
       // Set voice properties
-      newUtterance.voice = voices[voiceIndex] || null;
+      if (voices.length > voiceIndex) {
+        newUtterance.voice = voices[voiceIndex];
+        console.log('Using voice:', voices[voiceIndex]?.name);
+      }
+      
       newUtterance.volume = volume;
       newUtterance.rate = settings.rate;
       newUtterance.pitch = settings.pitch;
       
       // Setup event handlers
       newUtterance.onstart = () => {
+        console.log('Speech started');
         setIsSpeaking(true);
         if (onStart) onStart();
       };
       
       newUtterance.onend = () => {
+        console.log('Speech ended');
         setIsSpeaking(false);
         setIsPaused(false);
         if (onEnd) onEnd();
@@ -109,6 +140,11 @@ export function useSpeechSynthesis({
         console.error('Speech synthesis error:', event);
         setIsSpeaking(false);
         setIsPaused(false);
+        
+        toast.error('Speech output failed', {
+          description: 'There was an issue with the voice response. Please try again.',
+        });
+        
         if (onError) onError(event);
       };
       
@@ -118,8 +154,21 @@ export function useSpeechSynthesis({
       
       // Start speaking
       window.speechSynthesis.speak(newUtterance);
+      
+      // Chrome bug workaround: If speech doesn't start within 500ms, try again
+      setTimeout(() => {
+        if (utteranceRef.current === newUtterance && !isSpeaking) {
+          console.log('Speech didn\'t start, retrying...');
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(newUtterance);
+        }
+      }, 500);
+      
     } catch (error) {
       console.error('Failed to initialize speech synthesis:', error);
+      toast.error('Speech synthesis failed', {
+        description: 'Failed to start speaking. Please try again.',
+      });
       if (onError) onError(error);
     }
   };
@@ -127,22 +176,34 @@ export function useSpeechSynthesis({
   // Control functions
   const pause = () => {
     if (isSpeaking && !isPaused) {
-      window.speechSynthesis.pause();
-      setIsPaused(true);
+      try {
+        window.speechSynthesis.pause();
+        setIsPaused(true);
+      } catch (e) {
+        console.error('Error pausing speech:', e);
+      }
     }
   };
   
   const resume = () => {
     if (isSpeaking && isPaused) {
-      window.speechSynthesis.resume();
-      setIsPaused(false);
+      try {
+        window.speechSynthesis.resume();
+        setIsPaused(false);
+      } catch (e) {
+        console.error('Error resuming speech:', e);
+      }
     }
   };
   
   const cancel = () => {
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-    setIsPaused(false);
+    try {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+    } catch (e) {
+      console.error('Error canceling speech:', e);
+    }
   };
   
   // Change the voice

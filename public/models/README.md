@@ -3,11 +3,11 @@
 
 This directory should contain the following 3D model files:
 
-1. `robot_head.glb` - A futuristic robot head model with articulated jaw for speaking animations
-2. `female_head.glb` - A stylized female character head with facial animation capabilities 
-3. `male_head.glb` - A stylized male character head with facial animation capabilities
+1. `stylized_male.glb` - A stylized male character model with facial animation capabilities
+2. `stylized_female.glb` - A stylized female character model with facial animation capabilities
+3. `robot_head.glb` - A futuristic robot head model with articulated jaw for speaking animations
 
-If these files are not present, the application will fall back to emoji placeholders in the UI.
+If these files are not present, the application will fall back to 2D images.
 
 ## Getting 3D Models
 
@@ -24,3 +24,7 @@ Look for models that:
 4. Have appropriate licensing for your use case
 
 Place the downloaded files in this directory with the exact filenames above.
+
+## Default Fallback
+
+If 3D models aren't available, the app will use 2D images as fallbacks.
