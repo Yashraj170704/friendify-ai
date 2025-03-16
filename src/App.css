@@ -45,8 +45,8 @@
 /* Futuristic UI Elements */
 .cyber-border {
   position: relative;
-  border: 1px solid rgba(74, 157, 255, 0.3);
-  box-shadow: 0 0 10px rgba(74, 157, 255, 0.2);
+  border: 1px solid rgba(155, 135, 245, 0.3);
+  box-shadow: 0 0 10px rgba(155, 135, 245, 0.2);
   backdrop-filter: blur(5px);
 }
 
@@ -57,14 +57,14 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  border: 1px solid rgba(74, 157, 255, 0.1);
+  border: 1px solid rgba(155, 135, 245, 0.1);
   border-radius: inherit;
   animation: borderPulse 4s infinite;
 }
 
 @keyframes borderPulse {
-  0%, 100% { border-color: rgba(74, 157, 255, 0.1); }
-  50% { border-color: rgba(74, 157, 255, 0.3); }
+  0%, 100% { border-color: rgba(155, 135, 245, 0.1); }
+  50% { border-color: rgba(155, 135, 245, 0.3); }
 }
 
 .tech-scanline {
@@ -81,9 +81,9 @@
   bottom: -20%;
   background: linear-gradient(
     to bottom,
-    rgba(74, 157, 255, 0) 0%,
-    rgba(74, 157, 255, 0.15) 50%,
-    rgba(74, 157, 255, 0) 100%
+    rgba(155, 135, 245, 0) 0%,
+    rgba(155, 135, 245, 0.15) 50%,
+    rgba(155, 135, 245, 0) 100%
   );
   animation: scanline 6s linear infinite;
 }
@@ -100,8 +100,8 @@
 /* 3D Grid Background */
 .cyber-grid {
   background-image: 
-    linear-gradient(to right, rgba(74, 157, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(74, 157, 255, 0.1) 1px, transparent 1px);
+    linear-gradient(to right, rgba(155, 135, 245, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(155, 135, 245, 0.1) 1px, transparent 1px);
   background-size: 40px 40px;
   position: relative;
 }
@@ -113,7 +113,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(74, 157, 255, 0.15) 0%, rgba(10, 20, 40, 0) 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(155, 135, 245, 0.15) 0%, rgba(10, 20, 40, 0) 70%);
   pointer-events: none;
 }
 

@@ -17,7 +17,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-indigo-950 py-4 px-4 sm:px-6 lg:px-8 cyber-grid relative overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-purple-950 py-4 px-4 sm:px-6 lg:px-8 cyber-grid relative overflow-y-auto">
       {/* 3D Background */}
       <BackgroundScene />
       
