@@ -1,7 +1,7 @@
 
 # 3D Models for AI Assistant
 
-This directory should contain the following 3D model files:
+This directory should contain the following 3D model files to use the full 3D avatar features:
 
 1. `stylized_male.glb` - A stylized male character model with facial animation capabilities
 2. `stylized_female.glb` - A stylized female character model with facial animation capabilities

@@ -1,19 +1,10 @@
 
 /// <reference types="vite/client" />
 
-interface Window {
-  SpeechRecognition?: typeof SpeechRecognition;
-  webkitSpeechRecognition?: typeof SpeechRecognition;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message?: string;
-}
-
 interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
   results: SpeechRecognitionResultList;
+  resultIndex: number;
+  interpretation: any;
 }
 
 interface SpeechRecognitionResultList {
@@ -34,16 +25,31 @@ interface SpeechRecognitionAlternative {
   confidence: number;
 }
 
-declare class SpeechRecognition extends EventTarget {
-  constructor();
+interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  maxAlternatives: number;
+  onaudioend: (this: SpeechRecognition, ev: Event) => any;
+  onaudiostart: (this: SpeechRecognition, ev: Event) => any;
+  onend: (this: SpeechRecognition, ev: Event) => any;
+  onerror: (this: SpeechRecognition, ev: Event) => any;
+  onnomatch: (this: SpeechRecognition, ev: Event) => any;
+  onresult: (this: SpeechRecognition, ev: SpeechRecognitionEvent) => any;
+  onsoundend: (this: SpeechRecognition, ev: Event) => any;
+  onsoundstart: (this: SpeechRecognition, ev: Event) => any;
+  onspeechend: (this: SpeechRecognition, ev: Event) => any;
+  onspeechstart: (this: SpeechRecognition, ev: Event) => any;
+  onstart: (this: SpeechRecognition, ev: Event) => any;
   start(): void;
   stop(): void;
   abort(): void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  onstart: (() => void) | null;
+}
+
+interface Window {
+  SpeechRecognition: new () => SpeechRecognition;
+  webkitSpeechRecognition: new () => SpeechRecognition;
+  mozSpeechRecognition: new () => SpeechRecognition;
+  msSpeechRecognition: new () => SpeechRecognition;
+  oSpeechRecognition: new () => SpeechRecognition;
 }

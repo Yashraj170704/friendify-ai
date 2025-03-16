@@ -1,264 +1,222 @@
 
-import { useState, useEffect, useRef } from 'react';
-import type { Emotion } from '../context/ChatContext';
-import { toast } from 'sonner';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import type { Emotion } from '@/context/ChatContext';
 
-interface UseSpeechSynthesisOptions {
-  rate?: number;
-  pitch?: number;
-  volume?: number;
+interface SpeechSynthesisOptions {
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (error: any) => void;
+  defaultVoice?: string;
 }
 
-export function useSpeechSynthesis({
-  rate = 1,
-  pitch = 1,
-  volume = 1,
-  onStart,
-  onEnd,
-  onError
-}: UseSpeechSynthesisOptions = {}) {
+export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [utterance, setUtterance] = useState<SpeechSynthesisUtterance | null>(null);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [voiceIndex, setVoiceIndex] = useState(0);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
   
-  // Use a ref to track the current utterance
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  
-  // Check if speech synthesis is supported
-  const isSpeechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
-  
-  // Load available voices
+  // Initialize speech synthesis
   useEffect(() => {
-    if (!isSpeechSupported) {
-      console.error('Speech synthesis not supported in this browser');
-      return;
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+      
+      // Load voices
+      const loadVoices = () => {
+        const availableVoices = synthRef.current?.getVoices() || [];
+        setVoices(availableVoices);
+      };
+      
+      // Some browsers load voices asynchronously
+      if (synthRef.current.onvoiceschanged !== undefined) {
+        synthRef.current.onvoiceschanged = loadVoices;
+      }
+      
+      // Initial load
+      loadVoices();
+      
+      // Ensure speech synthesis is canceled when component unmounts
+      return () => {
+        if (synthRef.current?.speaking) {
+          console.log('Canceling speech on unmount');
+          synthRef.current.cancel();
+        }
+      };
+    }
+  }, []);
+
+  // Find best voice for the given emotion
+  const getBestVoice = useCallback((emotion: Emotion = 'neutral'): SpeechSynthesisVoice | null => {
+    if (!voices.length) return null;
+
+    // Use voice preference if available
+    const preferredVoice = options.defaultVoice;
+    if (preferredVoice) {
+      const foundVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes(preferredVoice.toLowerCase())
+      );
+      if (foundVoice) return foundVoice;
     }
     
-    const loadVoices = () => {
-      try {
-        const availableVoices = window.speechSynthesis.getVoices();
-        if (availableVoices.length > 0) {
-          console.log('Loaded voices:', availableVoices.length);
-          setVoices(availableVoices);
-          
-          // Default to a female English voice if available
-          const femaleEnglishVoice = availableVoices.findIndex(
-            voice => voice.lang.includes('en') && voice.name.includes('Female')
-          );
-          
-          if (femaleEnglishVoice !== -1) {
-            setVoiceIndex(femaleEnglishVoice);
-          }
-        } else {
-          console.warn('No voices available');
-        }
-      } catch (err) {
-        console.error('Error loading voices:', err);
-      }
-    };
+    // Default voice preferences based on emotion
+    let voicePreference: string;
     
-    loadVoices();
-    
-    // Chrome loads voices asynchronously
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-    
-    return () => {
-      if (isSpeechSupported) {
-        try {
-          window.speechSynthesis.cancel();
-        } catch (e) {
-          console.error('Error canceling speech synthesis:', e);
-        }
-      }
-    };
-  }, [isSpeechSupported]);
-  
-  // Fix for Chrome speech synthesis bug
-  useEffect(() => {
-    if (!isSpeechSupported) return;
-    
-    // Chrome has a bug where it stops speaking after ~15 seconds
-    // This is a workaround that restarts the speech synthesis periodically
-    const intervalId = setInterval(() => {
-      if (isSpeaking && !isPaused && utteranceRef.current) {
-        window.speechSynthesis.pause();
-        window.speechSynthesis.resume();
-      }
-    }, 10000);
-    
-    return () => clearInterval(intervalId);
-  }, [isSpeaking, isPaused, isSpeechSupported]);
-  
-  // Adjust voice characteristics based on emotion
-  const getVoiceSettings = (emotion: Emotion) => {
     switch (emotion) {
       case 'happy':
-        return { rate: rate * 1.1, pitch: pitch * 1.2 };
+        voicePreference = 'female';
+        break;
       case 'sad':
-        return { rate: rate * 0.9, pitch: pitch * 0.9 };
+        voicePreference = 'male';
+        break;
       case 'angry':
-        return { rate: rate * 1.2, pitch: pitch * 0.8 };
+        voicePreference = 'male';
+        break;
       case 'surprised':
-        return { rate: rate * 1.3, pitch: pitch * 1.3 };
+        voicePreference = 'female';
+        break;
       default:
-        return { rate, pitch };
+        voicePreference = 'uk'; // neutral - prefer UK voice
     }
-  };
-  
-  // Speak function
-  const speak = (text: string, emotion: Emotion = 'neutral') => {
-    // Check if speech synthesis is supported
-    if (!isSpeechSupported) {
-      console.error('Speech synthesis not supported');
-      toast.error('Speech synthesis not supported in this browser');
-      if (onError) onError(new Error('Speech synthesis not supported'));
+    
+    // Try to find a voice based on emotion
+    let bestVoice = voices.find(voice => 
+      voice.name.toLowerCase().includes(voicePreference) &&
+      voice.name.toLowerCase().includes('english')
+    );
+    
+    // Fallback to any English voice
+    if (!bestVoice) {
+      bestVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('english')
+      );
+    }
+    
+    // Ultimate fallback to first voice
+    return bestVoice || voices[0];
+  }, [voices, options.defaultVoice]);
+
+  // Configure utterance based on emotion
+  const configureUtterance = useCallback((text: string, emotion: Emotion = 'neutral'): SpeechSynthesisUtterance => {
+    const newUtterance = new SpeechSynthesisUtterance(text);
+    
+    // Set voice
+    const voice = getBestVoice(emotion);
+    if (voice) {
+      console.log('Using voice:', voice.name);
+      newUtterance.voice = voice;
+    }
+    
+    // Configure speech parameters based on emotion
+    switch (emotion) {
+      case 'happy':
+        newUtterance.rate = 1.1;    // Slightly faster
+        newUtterance.pitch = 1.2;   // Higher pitch
+        break;
+      case 'sad':
+        newUtterance.rate = 0.9;    // Slower
+        newUtterance.pitch = 0.8;   // Lower pitch
+        break;
+      case 'angry':
+        newUtterance.rate = 1.1;    // Slightly faster
+        newUtterance.pitch = 1.0;   // Normal pitch
+        newUtterance.volume = 1.0;  // Louder
+        break;
+      case 'surprised':
+        newUtterance.rate = 1.2;    // Faster
+        newUtterance.pitch = 1.4;   // Much higher pitch
+        break;
+      default: // neutral
+        newUtterance.rate = 1.0;
+        newUtterance.pitch = 1.0;
+    }
+    
+    // Add event handlers
+    newUtterance.onstart = () => {
+      console.log('Speech started');
+      setIsSpeaking(true);
+      setIsPaused(false);
+      if (options.onStart) options.onStart();
+    };
+    
+    newUtterance.onend = () => {
+      console.log('Speech ended');
+      setIsSpeaking(false);
+      setIsPaused(false);
+      if (options.onEnd) options.onEnd();
+    };
+    
+    newUtterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsSpeaking(false);
+      setIsPaused(false);
+      if (options.onError) options.onError(event);
+    };
+    
+    return newUtterance;
+  }, [getBestVoice, options]);
+
+  // Speak text with emotion
+  const speak = useCallback((text: string, emotion: Emotion = 'neutral') => {
+    if (!synthRef.current) {
+      console.error('Speech synthesis not available');
+      if (options.onError) options.onError(new Error('Speech synthesis not available'));
       return;
     }
-    
-    // Cancel any ongoing speech
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {
-      console.error('Error canceling previous speech:', e);
-    }
-    
-    if (!text) return;
     
     try {
       console.log('Starting speech synthesis:', text);
-      const newUtterance = new SpeechSynthesisUtterance(text);
       
-      // Apply emotion-based settings
-      const settings = getVoiceSettings(emotion);
+      // Create and configure utterance
+      const newUtterance = configureUtterance(text, emotion);
       
-      // Set voice properties
-      if (voices.length > voiceIndex) {
-        newUtterance.voice = voices[voiceIndex];
-        console.log('Using voice:', voices[voiceIndex]?.name);
-      }
+      // Cancel any previous speech
+      synthRef.current.cancel();
       
-      newUtterance.volume = volume;
-      newUtterance.rate = settings.rate;
-      newUtterance.pitch = settings.pitch;
-      
-      // Setup event handlers
-      newUtterance.onstart = () => {
-        console.log('Speech started');
-        setIsSpeaking(true);
-        if (onStart) onStart();
-      };
-      
-      newUtterance.onend = () => {
-        console.log('Speech ended');
-        setIsSpeaking(false);
-        setIsPaused(false);
-        if (onEnd) onEnd();
-      };
-      
-      newUtterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
-        setIsSpeaking(false);
-        setIsPaused(false);
-        
-        toast.error('Speech output failed', {
-          description: 'There was an issue with the voice response. Trying fallback method...',
-        });
-        
-        // Try fallback method - sometimes using a different voice works
-        setTimeout(() => {
-          try {
-            const fallbackUtterance = new SpeechSynthesisUtterance(text);
-            // Try a different voice if available
-            if (voices.length > 0) {
-              const fallbackVoiceIndex = (voiceIndex + 1) % voices.length;
-              fallbackUtterance.voice = voices[fallbackVoiceIndex];
-              fallbackUtterance.volume = volume;
-              fallbackUtterance.rate = settings.rate;
-              fallbackUtterance.pitch = settings.pitch;
-              
-              window.speechSynthesis.speak(fallbackUtterance);
-            }
-          } catch (err) {
-            console.error('Fallback speech failed:', err);
-            if (onError) onError(event);
-          }
-        }, 500);
-      };
-      
-      // Store the utterance in ref and state
-      utteranceRef.current = newUtterance;
+      // Store utterance reference
       setUtterance(newUtterance);
       
       // Start speaking
-      window.speechSynthesis.speak(newUtterance);
+      synthRef.current.speak(newUtterance);
       
-      // Chrome bug workaround: If speech doesn't start within 500ms, try again
-      setTimeout(() => {
-        if (utteranceRef.current === newUtterance && !isSpeaking) {
-          console.log('Speech didn\'t start, retrying...');
-          window.speechSynthesis.cancel();
-          window.speechSynthesis.speak(newUtterance);
-        }
-      }, 500);
-      
+      // Some browsers need this hack to start speaking
+      if (!synthRef.current.speaking) {
+        setTimeout(() => {
+          if (synthRef.current && !synthRef.current.speaking) {
+            synthRef.current.speak(newUtterance);
+          }
+        }, 100);
+      }
     } catch (error) {
-      console.error('Failed to initialize speech synthesis:', error);
-      toast.error('Speech synthesis failed', {
-        description: 'Failed to start speaking. Please try again.',
-      });
-      if (onError) onError(error);
+      console.error('Error starting speech:', error);
+      if (options.onError) options.onError(error);
     }
-  };
-  
-  // Control functions
-  const pause = () => {
-    if (isSpeaking && !isPaused && isSpeechSupported) {
-      try {
-        window.speechSynthesis.pause();
-        setIsPaused(true);
-      } catch (e) {
-        console.error('Error pausing speech:', e);
-      }
+  }, [configureUtterance, options]);
+
+  // Pause speaking
+  const pause = useCallback(() => {
+    if (synthRef.current) {
+      synthRef.current.pause();
+      setIsPaused(true);
     }
-  };
-  
-  const resume = () => {
-    if (isSpeaking && isPaused && isSpeechSupported) {
-      try {
-        window.speechSynthesis.resume();
-        setIsPaused(false);
-      } catch (e) {
-        console.error('Error resuming speech:', e);
-      }
+  }, []);
+
+  // Resume speaking
+  const resume = useCallback(() => {
+    if (synthRef.current) {
+      synthRef.current.resume();
+      setIsPaused(false);
     }
-  };
-  
-  const cancel = () => {
-    if (isSpeechSupported) {
-      try {
-        window.speechSynthesis.cancel();
-        setIsSpeaking(false);
-        setIsPaused(false);
-      } catch (e) {
-        console.error('Error canceling speech:', e);
-      }
+  }, []);
+
+  // Cancel speaking
+  const cancel = useCallback(() => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
     }
-  };
-  
-  // Change the voice
-  const setVoice = (index: number) => {
-    if (index >= 0 && index < voices.length) {
-      setVoiceIndex(index);
-    }
-  };
-  
+  }, []);
+
   return {
     speak,
     pause,
@@ -267,8 +225,5 @@ export function useSpeechSynthesis({
     isSpeaking,
     isPaused,
     voices,
-    voiceIndex,
-    setVoice,
-    supported: isSpeechSupported
   };
-}
+};

@@ -57,14 +57,29 @@ export const getAvatarPlaceholder = (id: string) => {
 };
 
 // Use the uploaded image as a fallback 
-const StylizedAvatarFallback = ({ id }: { id: string }) => {
-  // Use the image from lovable-uploads
+const StylizedAvatarFallback = ({ id, emotion }: { id: string, emotion: Emotion }) => {
+  // Get the emotion-based class
+  const getEmotionClass = () => {
+    switch (emotion) {
+      case 'happy':
+        return 'animate-bounce-light';
+      case 'sad':
+        return 'opacity-80 filter brightness-90';
+      case 'angry':
+        return 'animate-shake-light filter brightness-110 saturate-150';
+      case 'surprised':
+        return 'animate-pop-light';
+      default:
+        return '';
+    }
+  };
+  
   return (
     <div className="w-full h-full flex items-center justify-center">
       <img 
         src="/lovable-uploads/420bbb98-bf8a-47bf-a0d9-c9575cd88890.png" 
         alt="AI Avatar" 
-        className="object-cover max-h-full rounded-full"
+        className={`object-cover max-h-full rounded-full ${getEmotionClass()}`}
       />
     </div>
   );
@@ -254,14 +269,14 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
   const selectedAvatarData = avatarOptions.find(avatar => avatar.id === selectedAvatar) || avatarOptions[0];
   const [modelLoadFailed, setModelLoadFailed] = useState(true); // Default to true to show the image by default
   
-  // Always show the image fallback for now
+  // Always show the image fallback for now until 3D models are provided
   useEffect(() => {
     setModelLoadFailed(true);
   }, []);
   
   return (
     <div className="relative w-full">
-      <div className="aspect-square w-full max-w-[300px] mx-auto cyber-border rounded-full overflow-hidden bg-black bg-opacity-20 shadow-xl">
+      <div className="aspect-square w-full max-w-[250px] mx-auto cyber-border rounded-full overflow-hidden bg-black bg-opacity-20 shadow-xl">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -269,10 +284,10 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
           className="w-full h-full tech-scanline"
         >
           {modelLoadFailed ? (
-            <StylizedAvatarFallback id={selectedAvatar} />
+            <StylizedAvatarFallback id={selectedAvatar} emotion={emotion} />
           ) : (
             <ErrorBoundary fallback={
-              <StylizedAvatarFallback id={selectedAvatar} />
+              <StylizedAvatarFallback id={selectedAvatar} emotion={emotion} />
             }>
               <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
                 <ambientLight intensity={0.5} />
