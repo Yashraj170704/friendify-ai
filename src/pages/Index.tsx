@@ -4,14 +4,14 @@ import { ChatProvider } from '@/context/ChatContext';
 import ChatInterface from '@/components/ChatInterface';
 import BackgroundScene from '@/components/BackgroundScene';
 import { toast } from 'sonner';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Sparkles, Brain, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Index = () => {
   useEffect(() => {
     // Welcome toast
-    toast.success("AI Assistant ready!", {
-      description: "Your futuristic AI companion is ready to chat.",
+    toast.success("AI Friend ready!", {
+      description: "Your empathetic AI friend is ready to chat with you!",
       duration: 5000,
     });
   }, []);
@@ -32,12 +32,25 @@ const Index = () => {
           <div className="text-center">
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600 animate-gradient-shift flex items-center justify-center gap-2">
               <Bot className="h-8 w-8 text-purple-400" />
-              Futuristic AI Assistant
-              <Sparkles className="h-8 w-8 text-pink-400" />
+              AI Friend
+              <Heart className="h-7 w-7 text-pink-400" />
             </h1>
             <p className="text-purple-200 mt-2 animate-fade-in">
-              An intelligent AI companion that speaks, listens, and responds
+              Your emotionally intelligent AI companion that understands and adapts to you
             </p>
+            
+            {/* Feature badges */}
+            <div className="flex flex-wrap justify-center gap-2 mt-3">
+              <span className="bg-purple-500/20 px-2 py-1 rounded-full text-xs text-purple-200 flex items-center">
+                <Sparkles className="h-3 w-3 mr-1" /> Emotion Recognition
+              </span>
+              <span className="bg-pink-500/20 px-2 py-1 rounded-full text-xs text-pink-200 flex items-center">
+                <Brain className="h-3 w-3 mr-1" /> Contextual Memory
+              </span>
+              <span className="bg-blue-500/20 px-2 py-1 rounded-full text-xs text-blue-200 flex items-center">
+                <Heart className="h-3 w-3 mr-1" /> Empathetic Responses
+              </span>
+            </div>
           </div>
         </motion.header>
         
@@ -53,7 +66,7 @@ const Index = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 1 }}
         >
-          <p>Your AI assistant responds to your voice, emotions, and can speak back to you</p>
+          <p>Your AI friend responds to your emotions, remembers your conversations, and evolves with every interaction</p>
         </motion.footer>
       </div>
       

@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 
 // Define emotion types
 export type Emotion = 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised';
@@ -22,6 +21,7 @@ interface ChatContextType {
   isProcessing: boolean;
   isSpeaking: boolean;
   selectedAvatar: string;
+  conversationContext: string[];
   addMessage: (content: string, sender: 'user' | 'ai', emotion?: Emotion) => void;
   setUserEmotion: (emotion: Emotion) => void;
   setAiEmotion: (emotion: Emotion) => void;
@@ -30,6 +30,7 @@ interface ChatContextType {
   clearMessages: () => void;
   setIsSpeaking: (speaking: boolean) => void;
   setSelectedAvatar: (avatarId: string) => void;
+  updateConversationContext: (newContext: string) => void;
 }
 
 // Create context with default values
@@ -41,6 +42,7 @@ const ChatContext = createContext<ChatContextType>({
   isProcessing: false,
   isSpeaking: false,
   selectedAvatar: 'robot',
+  conversationContext: [],
   addMessage: () => {},
   setUserEmotion: () => {},
   setAiEmotion: () => {},
@@ -48,11 +50,15 @@ const ChatContext = createContext<ChatContextType>({
   stopListening: () => {},
   clearMessages: () => {},
   setIsSpeaking: () => {},
-  setSelectedAvatar: () => {}
+  setSelectedAvatar: () => {},
+  updateConversationContext: () => {}
 });
 
 // Custom hook to use the chat context
 export const useChat = () => useContext(ChatContext);
+
+// Maximum number of context items to keep
+const MAX_CONTEXT_ITEMS = 10;
 
 // Provider component
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
@@ -63,6 +69,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState('robot');
+  const [conversationContext, setConversationContext] = useState<string[]>([]);
 
   // Add a message to the chat
   const addMessage = useCallback((content: string, sender: 'user' | 'ai', emotion: Emotion = 'neutral') => {
@@ -82,6 +89,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Update conversation context with new information
+  const updateConversationContext = useCallback((newContext: string) => {
+    setConversationContext(prevContext => {
+      const updatedContext = [...prevContext, newContext];
+      // Keep only the most recent context items
+      return updatedContext.slice(-MAX_CONTEXT_ITEMS);
+    });
+  }, []);
+
   // Start listening for voice input
   const startListening = useCallback(() => {
     setIsListening(true);
@@ -95,6 +111,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   // Clear all messages
   const clearMessages = useCallback(() => {
     setMessages([]);
+    // Also clear conversation context when starting a new conversation
+    setConversationContext([]);
   }, []);
 
   // Value to be provided by the context
@@ -106,6 +124,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     isProcessing,
     isSpeaking,
     selectedAvatar,
+    conversationContext,
     addMessage,
     setUserEmotion,
     setAiEmotion,
@@ -113,7 +132,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     stopListening,
     clearMessages,
     setIsSpeaking,
-    setSelectedAvatar
+    setSelectedAvatar,
+    updateConversationContext
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

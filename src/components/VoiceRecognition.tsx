@@ -4,9 +4,10 @@ import { Mic, MicOff, Send, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useChat } from '@/context/ChatContext';
-import { generateAIResponse } from '@/lib/emotions';
 import { toast } from 'sonner';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { getAIResponse, extractKeyInfo } from '@/services/aiService';
+import type { Emotion } from '@/context/ChatContext';
 
 const VoiceRecognition = () => {
   const { 
@@ -14,10 +15,13 @@ const VoiceRecognition = () => {
     userEmotion, 
     isListening, 
     startListening: contextStartListening, 
-    stopListening: contextStopListening 
+    stopListening: contextStopListening,
+    conversationContext,
+    updateConversationContext
   } = useChat();
   const [lastProcessedText, setLastProcessedText] = useState('');
   const [microphoneStatus, setMicrophoneStatus] = useState<'ready' | 'checking' | 'error'>('checking');
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Initialize speech synthesis
   const speech = useSpeechSynthesis({
@@ -29,30 +33,65 @@ const VoiceRecognition = () => {
     }
   });
   
+  // Process user input and get AI response
+  const processUserInput = async (text: string, emotion: Emotion) => {
+    if (!text.trim() || text === lastProcessedText) return;
+    
+    setIsProcessing(true);
+    // Update last processed text to avoid duplicates
+    setLastProcessedText(text);
+    
+    // Add user message with combined emotion from face and voice
+    // Prioritize facial emotion if available, otherwise use voice emotion
+    const combinedEmotion = userEmotion !== 'neutral' ? userEmotion : emotion;
+    console.log('Combined emotion (face + voice):', combinedEmotion);
+    
+    // Add user message
+    addMessage(text, 'user', combinedEmotion);
+    
+    // Extract any key information from the message
+    const keyInfo = extractKeyInfo(text);
+    if (keyInfo.length > 0) {
+      keyInfo.forEach(info => {
+        updateConversationContext(info);
+      });
+    }
+    
+    try {
+      // Get AI response using context awareness
+      const aiResponse = await getAIResponse({
+        message: text,
+        userEmotion: combinedEmotion,
+        conversationContext: conversationContext
+      });
+      
+      // Add AI response to messages
+      addMessage(aiResponse.text, 'ai', aiResponse.emotion);
+      
+      // Speak the response
+      speech.speak(aiResponse.text, aiResponse.emotion);
+    } catch (error) {
+      console.error('Error processing user input:', error);
+      toast.error('Error processing your message', {
+        description: 'There was a problem generating a response. Please try again.',
+      });
+      
+      // Add fallback message
+      addMessage(
+        "I'm sorry, I encountered an issue processing your message. Could we try again?", 
+        'ai', 
+        'neutral'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
   // Handle speech recognition results
   const handleSpeechResult = (text: string, emotion: Emotion) => {
     console.log('Speech recognized, processing:', text);
     if (text.trim() && text !== lastProcessedText) {
-      // Update last processed text to avoid duplicates
-      setLastProcessedText(text);
-      
-      // Add user message with combined emotion from face and voice
-      // Prioritize facial emotion if available, otherwise use voice emotion
-      const combinedEmotion = userEmotion !== 'neutral' ? userEmotion : emotion;
-      console.log('Combined emotion (face + voice):', combinedEmotion);
-      
-      // Add user message
-      addMessage(text, 'user', combinedEmotion);
-      
-      // Generate AI response based on combined emotion
-      setTimeout(() => {
-        const response = generateAIResponse(text, combinedEmotion);
-        addMessage(response.text, 'ai', response.emotion);
-        
-        // Speak the response using our speech hook
-        speech.speak(response.text, response.emotion);
-      }, 800);
-      
+      processUserInput(text, emotion);
       contextStopListening();
     }
   };
@@ -129,24 +168,9 @@ const VoiceRecognition = () => {
     if (transcript.trim()) {
       const trimmedTranscript = transcript.trim();
       console.log('Sending message:', trimmedTranscript);
-      setLastProcessedText(trimmedTranscript);
       
-      // Use combined emotion from face and voice
-      const combinedEmotion = userEmotion !== 'neutral' ? userEmotion : 
-                             detectEmotionFromText(trimmedTranscript);
-      
-      // Add user message
-      addMessage(trimmedTranscript, 'user', combinedEmotion);
-      
-      // Generate AI response based on combined emotion
-      setTimeout(() => {
-        const response = generateAIResponse(trimmedTranscript, combinedEmotion);
-        addMessage(response.text, 'ai', response.emotion);
-        
-        // Speak the response using our speech hook
-        speech.speak(response.text, response.emotion);
-      }, 800);
-      
+      // Process the message
+      processUserInput(trimmedTranscript, userEmotion);
       contextStopListening();
     } else {
       toast.info('No message to send', {
@@ -169,6 +193,7 @@ const VoiceRecognition = () => {
                 ? 'bg-primary text-white animate-pulse' 
                 : 'bg-secondary'
           }`}
+          disabled={isProcessing}
         >
           {microphoneStatus === 'error' ? (
             <AlertCircle className="h-6 w-6" />
@@ -186,6 +211,11 @@ const VoiceRecognition = () => {
                 <span className="animate-pulse mr-2">●</span>
                 {transcript ? transcript : "Listening..."}
               </div>
+            ) : isProcessing ? (
+              <div className="flex items-center">
+                <span className="animate-pulse mr-2 text-purple-500">●</span>
+                Processing...
+              </div>
             ) : (
               microphoneStatus === 'error' 
                 ? "Microphone access required" 
@@ -199,7 +229,7 @@ const VoiceRecognition = () => {
           size="icon"
           className="rounded-full w-12 h-12 bg-friend hover:bg-friend-dark"
           onClick={handleSendMessage}
-          disabled={!transcript.trim()}
+          disabled={!transcript.trim() || isProcessing}
         >
           <Send className="h-5 w-5" />
         </Button>
@@ -226,8 +256,5 @@ const VoiceRecognition = () => {
     </div>
   );
 };
-
-import { detectEmotionFromText } from '@/lib/emotions';
-import type { Emotion } from '@/context/ChatContext';
 
 export default VoiceRecognition;
