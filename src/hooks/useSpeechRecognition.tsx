@@ -114,17 +114,18 @@ export function useSpeechRecognition({
         }
       };
       
-      recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error:', event.error);
-        setError(`Error: ${event.error}`);
+      recognitionInstance.onerror = (event: Event) => {
+        const errorEvent = event as SpeechRecognitionErrorEvent;
+        console.error('Speech recognition error:', errorEvent.error);
+        setError(`Error: ${errorEvent.error}`);
         
         // Show toast for user feedback
         toast.error('Speech recognition error', {
-          description: `Error: ${event.error}. Please try again.`,
+          description: `Error: ${errorEvent.error}. Please try again.`,
         });
         
         // Auto-retry for certain errors if we haven't exceeded max retries
-        if (['network', 'service-not-allowed'].includes(event.error) && retryCountRef.current < maxRetries) {
+        if (['network', 'service-not-allowed'].includes(errorEvent.error) && retryCountRef.current < maxRetries) {
           retryCountRef.current++;
           toast.info('Retrying speech recognition...', {
             description: `Attempt ${retryCountRef.current} of ${maxRetries}`,
