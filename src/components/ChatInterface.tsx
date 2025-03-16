@@ -14,7 +14,7 @@ const ChatInterface = () => {
   const { 
     messages, 
     aiEmotion, 
-    isSpeaking, 
+    isSpeaking: chatIsSpeaking, 
     setIsSpeaking,
     selectedAvatar,
     setSelectedAvatar,
@@ -22,8 +22,9 @@ const ChatInterface = () => {
   } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showContextPanel, setShowContextPanel] = useState(false);
+  const lastProcessedMessageRef = useRef<string | null>(null);
   
-  const { speak, cancel } = useSpeechSynthesis({
+  const { speak, cancel, isSpeaking } = useSpeechSynthesis({
     onStart: () => setIsSpeaking(true),
     onEnd: () => setIsSpeaking(false),
     onError: (error) => {
@@ -38,17 +39,24 @@ const ChatInterface = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
     
-    // Speak the latest AI message
+    // Speak the latest AI message if it's not the same as the last one
     const latestMessage = messages[messages.length - 1];
-    if (latestMessage && latestMessage.sender === 'ai') {
+    if (latestMessage && 
+        latestMessage.sender === 'ai' && 
+        lastProcessedMessageRef.current !== latestMessage.id) {
+      console.log('Speaking new AI message:', latestMessage.content);
+      lastProcessedMessageRef.current = latestMessage.id;
       speak(latestMessage.content, latestMessage.emotion || 'neutral');
     }
     
-    // Cleanup function to cancel speech when component unmounts
+  }, [messages, speak]);
+
+  // Cleanup function to cancel speech when component unmounts
+  useEffect(() => {
     return () => {
       cancel();
     };
-  }, [messages, speak, cancel]);
+  }, [cancel]);
 
   const toggleContextPanel = () => {
     setShowContextPanel(!showContextPanel);
@@ -123,7 +131,7 @@ const ChatInterface = () => {
             <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar">
               {conversationContext.length > 0 ? (
                 conversationContext.map((item, index) => (
-                  <div key={index} className="bg-white/10 backdrop-blur-md rounded-lg p-2 text-sm">
+                  <div key={`context-${index}`} className="bg-white/10 backdrop-blur-md rounded-lg p-2 text-sm">
                     {item}
                   </div>
                 ))

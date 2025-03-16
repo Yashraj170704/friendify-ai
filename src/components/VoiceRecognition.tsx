@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Mic, MicOff, Send, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
@@ -26,15 +26,15 @@ const VoiceRecognition = () => {
   // Initialize speech synthesis
   const speech = useSpeechSynthesis({
     onError: (error) => {
-      console.error('Speech synthesis error:', error);
+      console.error('Speech synthesis error in VoiceRecognition:', error);
       toast.error('Speech output failed', {
-        description: 'There was an issue with the voice response.',
+        description: 'There was an issue with the voice response. Please try again.',
       });
     }
   });
   
   // Process user input and get AI response
-  const processUserInput = async (text: string, emotion: Emotion) => {
+  const processUserInput = useCallback(async (text: string, emotion: Emotion) => {
     if (!text.trim() || text === lastProcessedText) return;
     
     setIsProcessing(true);
@@ -68,8 +68,8 @@ const VoiceRecognition = () => {
       // Add AI response to messages
       addMessage(aiResponse.text, 'ai', aiResponse.emotion);
       
-      // Speak the response
-      speech.speak(aiResponse.text, aiResponse.emotion);
+      // No need to speak here as ChatInterface will handle this automatically
+      // when the new message is added to the messages array
     } catch (error) {
       console.error('Error processing user input:', error);
       toast.error('Error processing your message', {
@@ -85,16 +85,16 @@ const VoiceRecognition = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [addMessage, lastProcessedText, userEmotion, conversationContext, updateConversationContext]);
   
   // Handle speech recognition results
-  const handleSpeechResult = (text: string, emotion: Emotion) => {
+  const handleSpeechResult = useCallback((text: string, emotion: Emotion) => {
     console.log('Speech recognized, processing:', text);
     if (text.trim() && text !== lastProcessedText) {
       processUserInput(text, emotion);
       contextStopListening();
     }
-  };
+  }, [processUserInput, lastProcessedText, contextStopListening]);
   
   const { 
     isListening: isSpeechListening, 
@@ -147,7 +147,7 @@ const VoiceRecognition = () => {
     }
   }, [isListening, isSpeechListening, speechStartListening, speechStopListening, microphoneStatus]);
 
-  const handleMicToggle = () => {
+  const handleMicToggle = useCallback(() => {
     console.log('Mic button clicked, current state:', isListening);
     if (microphoneStatus === 'error') {
       toast.error('Microphone access required', {
@@ -162,9 +162,9 @@ const VoiceRecognition = () => {
     } else {
       contextStartListening();
     }
-  };
+  }, [isListening, microphoneStatus, contextStartListening, contextStopListening]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = useCallback(() => {
     if (transcript.trim()) {
       const trimmedTranscript = transcript.trim();
       console.log('Sending message:', trimmedTranscript);
@@ -177,7 +177,7 @@ const VoiceRecognition = () => {
         description: 'Please speak or type a message first.',
       });
     }
-  };
+  }, [transcript, processUserInput, userEmotion, contextStopListening]);
 
   return (
     <div className="voice-input glass-panel p-4">

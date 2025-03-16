@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Emotion } from '@/context/ChatContext';
+import { toast } from 'sonner';
 
 interface SpeechSynthesisOptions {
   onStart?: () => void;
@@ -25,6 +26,7 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
       const loadVoices = () => {
         const availableVoices = synthRef.current?.getVoices() || [];
         setVoices(availableVoices);
+        console.log('Available voices:', availableVoices.map(v => v.name));
       };
       
       // Some browsers load voices asynchronously
@@ -42,12 +44,20 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
           synthRef.current.cancel();
         }
       };
+    } else {
+      console.warn('Speech synthesis not available in this browser');
+      toast.error('Speech synthesis not available', {
+        description: 'Your browser doesn\'t support text-to-speech functionality.'
+      });
     }
   }, []);
 
   // Find best voice for the given emotion
   const getBestVoice = useCallback((emotion: Emotion = 'neutral'): SpeechSynthesisVoice | null => {
-    if (!voices.length) return null;
+    if (!voices.length) {
+      console.warn('No voices available yet');
+      return null;
+    }
 
     // Use voice preference if available
     const preferredVoice = options.defaultVoice;
@@ -59,40 +69,31 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
     }
     
     // Default voice preferences based on emotion
-    let voicePreference: string;
+    const voicePreferences = {
+      'happy': ['female', 'english'],
+      'sad': ['male', 'english'],
+      'angry': ['male', 'english'],
+      'surprised': ['female', 'english'],
+      'neutral': ['uk', 'english']
+    };
     
-    switch (emotion) {
-      case 'happy':
-        voicePreference = 'female';
-        break;
-      case 'sad':
-        voicePreference = 'male';
-        break;
-      case 'angry':
-        voicePreference = 'male';
-        break;
-      case 'surprised':
-        voicePreference = 'female';
-        break;
-      default:
-        voicePreference = 'uk'; // neutral - prefer UK voice
+    const preferences = voicePreferences[emotion] || voicePreferences.neutral;
+    
+    // Try to find a voice based on emotion preferences
+    for (const pref of preferences) {
+      const matchingVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes(pref)
+      );
+      if (matchingVoice) return matchingVoice;
     }
-    
-    // Try to find a voice based on emotion
-    let bestVoice = voices.find(voice => 
-      voice.name.toLowerCase().includes(voicePreference) &&
-      voice.name.toLowerCase().includes('english')
-    );
     
     // Fallback to any English voice
-    if (!bestVoice) {
-      bestVoice = voices.find(voice => 
-        voice.name.toLowerCase().includes('english')
-      );
-    }
+    const englishVoice = voices.find(voice => 
+      voice.lang.toLowerCase().includes('en')
+    );
     
     // Ultimate fallback to first voice
-    return bestVoice || voices[0];
+    return englishVoice || voices[0];
   }, [voices, options.defaultVoice]);
 
   // Configure utterance based on emotion
@@ -104,6 +105,10 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
     if (voice) {
       console.log('Using voice:', voice.name);
       newUtterance.voice = voice;
+      // Ensure language is set to match the voice
+      newUtterance.lang = voice.lang;
+    } else {
+      console.warn('No suitable voice found, using browser default');
     }
     
     // Configure speech parameters based on emotion
@@ -149,7 +154,13 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
       console.error('Speech synthesis error:', event);
       setIsSpeaking(false);
       setIsPaused(false);
+      // Call onError callback with error event
       if (options.onError) options.onError(event);
+      
+      // Show toast notification
+      toast.error('Speech synthesis error', {
+        description: 'There was an issue with text-to-speech. Try again or check browser settings.'
+      });
     };
     
     return newUtterance;
@@ -159,6 +170,9 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
   const speak = useCallback((text: string, emotion: Emotion = 'neutral') => {
     if (!synthRef.current) {
       console.error('Speech synthesis not available');
+      toast.error('Speech synthesis not available', {
+        description: 'Your browser doesn\'t support text-to-speech functionality.'
+      });
       if (options.onError) options.onError(new Error('Speech synthesis not available'));
       return;
     }
@@ -166,29 +180,42 @@ export const useSpeechSynthesis = (options: SpeechSynthesisOptions = {}) => {
     try {
       console.log('Starting speech synthesis:', text);
       
-      // Create and configure utterance
-      const newUtterance = configureUtterance(text, emotion);
-      
-      // Cancel any previous speech
+      // Force cancel any previous speech first
       synthRef.current.cancel();
       
-      // Store utterance reference
-      setUtterance(newUtterance);
-      
-      // Start speaking
-      synthRef.current.speak(newUtterance);
-      
-      // Some browsers need this hack to start speaking
-      if (!synthRef.current.speaking) {
-        setTimeout(() => {
+      // Wait a brief moment to ensure previous speech is fully canceled
+      setTimeout(() => {
+        try {
+          // Create and configure utterance
+          const newUtterance = configureUtterance(text, emotion);
+          
+          // Store utterance reference
+          setUtterance(newUtterance);
+          
+          // Start speaking
+          synthRef.current?.speak(newUtterance);
+          
+          // Chrome sometimes needs a "kick" to start speaking
           if (synthRef.current && !synthRef.current.speaking) {
-            synthRef.current.speak(newUtterance);
+            console.log('Speech not started, trying again...');
+            setTimeout(() => {
+              if (synthRef.current && !synthRef.current.speaking) {
+                synthRef.current.speak(newUtterance);
+              }
+            }, 50);
           }
-        }, 100);
-      }
+        } catch (innerError) {
+          console.error('Error in delayed speech start:', innerError);
+          if (options.onError) options.onError(innerError);
+        }
+      }, 50);
     } catch (error) {
       console.error('Error starting speech:', error);
       if (options.onError) options.onError(error);
+      
+      toast.error('Error starting speech', {
+        description: 'Unable to use text-to-speech. Please try again.'
+      });
     }
   }, [configureUtterance, options]);
 
