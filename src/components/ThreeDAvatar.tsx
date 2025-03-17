@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
@@ -265,7 +266,7 @@ function SafeAvatarModel(props: {
   }
 }
 
-// Animation with lip sync effect
+// Enhanced animation with improved lip sync effect
 function AvatarModel({ 
   modelPath, 
   position = [0, 0, 0], 
@@ -287,6 +288,8 @@ function AvatarModel({
 }) {
   const groupRef = useRef<Group>(null);
   const [loaded, setLoaded] = useState(false);
+  const [blinkTimer, setBlinkTimer] = useState<number>(0);
+  const [lastLipValue, setLastLipValue] = useState<number>(0);
   
   let gltf: GLTFResult | null = null;
   try {
@@ -319,99 +322,190 @@ function AvatarModel({
   useFrame((state) => {
     if (!groupRef.current) return;
     
+    // Natural idle movements
     groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
+    
+    // More natural head movements
     if (emotion === 'happy') {
       groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.5) * 0.05;
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.7) * 0.02;
     } else if (emotion === 'sad') {
       groupRef.current.rotation.x = -0.1 + Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.7) * 0.02 - 0.05;
+    } else if (emotion === 'surprised') {
+      groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 1.2) * 0.04;
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.03;
+    } else if (emotion === 'angry') {
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 1.5) * 0.03;
+      groupRef.current.position.x = Math.sin(state.clock.elapsedTime * 2) * 0.02;
+    } else {
+      // Neutral subtle movements
+      groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.5) * 0.02;
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.6) * 0.01;
     }
     
     if (gltf?.scene) {
+      const eyeBones = groupRef.current.children[0]?.children.filter(
+        child => child.name.includes('eye')
+      ) || [];
+      
+      // Enhanced lip syncing with more natural movements and variations
       if (speaking && groupRef.current.children[0]?.children) {
         const jawBone = groupRef.current.children[0].children.find(
           child => child.name === 'jaw' || child.name.includes('mouth')
         );
         
+        const mouthBones = groupRef.current.children[0].children.filter(
+          child => child.name.includes('mouth') || child.name.includes('lip')
+        );
+        
+        // More realistic lip syncing with varied patterns
         if (jawBone) {
-          const openAmount = Math.sin(state.clock.elapsedTime * 15) * 0.15;
-          const randomVariation = Math.sin(state.clock.elapsedTime * 7.3) * 0.05;
-          jawBone.rotation.x = Math.max(0, openAmount + randomVariation);
+          // Generate a natural-looking speech pattern
+          const baseFreq = 12;
+          const variationFreq = 7.3;
+          const emotionMod = emotion === 'angry' ? 1.3 : 
+                             emotion === 'happy' ? 1.1 : 
+                             emotion === 'sad' ? 0.8 : 1;
+                             
+          const openAmount = Math.sin(state.clock.elapsedTime * baseFreq * emotionMod) * 0.15;
+          const randomVariation = Math.sin(state.clock.elapsedTime * variationFreq) * 0.05;
+          const secondaryVariation = Math.sin(state.clock.elapsedTime * 3.7) * 0.03;
+          
+          // Smoother transitions between mouth positions
+          const targetValue = Math.max(0, openAmount + randomVariation + secondaryVariation);
+          const lerpSpeed = 0.3;
+          const newLipValue = THREE.MathUtils.lerp(lastLipValue, targetValue, lerpSpeed);
+          
+          jawBone.rotation.x = newLipValue;
+          setLastLipValue(newLipValue);
+          
+          // Animate other mouth parts for more realism
+          mouthBones.forEach(bone => {
+            if (bone !== jawBone && bone.name.includes('corner')) {
+              bone.rotation.y = Math.sin(state.clock.elapsedTime * 10) * 0.02;
+              
+              // Different movement based on emotion
+              if (emotion === 'happy') {
+                bone.position.y = Math.sin(state.clock.elapsedTime * 8) * 0.01 + 0.01;
+              } else if (emotion === 'sad') {
+                bone.position.y = Math.sin(state.clock.elapsedTime * 5) * 0.005 - 0.01;
+              }
+            }
+          });
         }
       }
       
+      // Enhanced emotion expressions
       if (emotion !== 'neutral' && groupRef.current.children[0]?.children) {
         const eyeBrows = groupRef.current.children[0].children.filter(
           child => child.name.includes('eyebrow') || child.name.includes('brow')
-        );
-        
-        const eyeBones = groupRef.current.children[0].children.filter(
-          child => child.name.includes('eye')
         );
         
         const mouthCorners = groupRef.current.children[0].children.filter(
           child => child.name.includes('mouth_corner') || child.name.includes('lip_corner')
         );
         
+        // More nuanced emotional expressions
         switch (emotion) {
           case 'happy':
             eyeBrows.forEach(bone => {
-              bone.rotation.x = -0.1;
+              bone.rotation.x = -0.1 + Math.sin(state.clock.elapsedTime * 2) * 0.02;
+              bone.position.y = 0.01 + Math.sin(state.clock.elapsedTime) * 0.003;
             });
             eyeBones.forEach(bone => {
-              bone.scale.y = 1.1;
+              bone.scale.y = 1.1 + Math.sin(state.clock.elapsedTime * 3) * 0.03;
             });
             mouthCorners.forEach((bone, index) => {
-              bone.position.y += 0.02;
+              bone.position.y += 0.02 + Math.sin(state.clock.elapsedTime * 1.5) * 0.005;
+              bone.rotation.z = (index % 2 === 0 ? 0.1 : -0.1) + Math.sin(state.clock.elapsedTime * 2) * 0.02;
             });
             break;
             
           case 'sad':
             eyeBrows.forEach(bone => {
-              bone.rotation.x = 0.1;
+              bone.rotation.x = 0.1 + Math.sin(state.clock.elapsedTime) * 0.03;
               if (bone.name.includes('inner')) {
-                bone.position.y += 0.02;
+                bone.position.y += 0.02 + Math.sin(state.clock.elapsedTime * 0.8) * 0.005;
               }
             });
+            eyeBones.forEach(bone => {
+              bone.scale.y = 0.9 + Math.sin(state.clock.elapsedTime * 1.5) * 0.05;
+            });
             mouthCorners.forEach(bone => {
-              bone.position.y -= 0.02;
+              bone.position.y -= 0.02 + Math.sin(state.clock.elapsedTime) * 0.005;
+              bone.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.01;
             });
             break;
             
           case 'angry':
             eyeBrows.forEach(bone => {
-              bone.rotation.x = 0.2;
-              bone.position.y -= 0.02;
+              bone.rotation.x = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+              bone.position.y -= 0.02 + Math.sin(state.clock.elapsedTime * 1.2) * 0.01;
               bone.position.x += bone.name.includes('left') ? 0.02 : -0.02;
+              bone.rotation.z = bone.name.includes('left') ? -0.1 : 0.1;
+            });
+            eyeBones.forEach(bone => {
+              bone.scale.y = 0.85 + Math.sin(state.clock.elapsedTime * 4) * 0.05;
             });
             mouthCorners.forEach(bone => {
-              bone.position.y -= 0.01;
+              bone.position.y -= 0.01 + Math.sin(state.clock.elapsedTime * 3) * 0.005;
+              bone.rotation.z = Math.sin(state.clock.elapsedTime * 2) * 0.05;
             });
             break;
             
           case 'surprised':
             eyeBrows.forEach(bone => {
-              bone.rotation.x = -0.2;
-              bone.position.y += 0.03;
+              bone.rotation.x = -0.2 - Math.sin(state.clock.elapsedTime) * 0.05;
+              bone.position.y += 0.03 + Math.sin(state.clock.elapsedTime * 1.5) * 0.01;
             });
             eyeBones.forEach(bone => {
-              bone.scale.y = 1.3;
+              bone.scale.y = 1.3 + Math.sin(state.clock.elapsedTime * 2) * 0.05;
+              bone.scale.x = 1.2 + Math.sin(state.clock.elapsedTime * 2.5) * 0.03;
+            });
+            mouthCorners.forEach(bone => {
+              bone.position.x += (bone.name.includes('left') ? -0.01 : 0.01);
+              bone.position.y += Math.sin(state.clock.elapsedTime * 3) * 0.01;
             });
             break;
         }
       }
       
-      const eyeBones = groupRef.current.children[0]?.children.filter(
-        child => child.name.includes('eye')
-      ) || [];
-      
-      if (eyeBones.length && Math.random() < 0.005) {
-        eyeBones.forEach(bone => {
-          bone.scale.y = 0.1;
-          setTimeout(() => {
-            if (bone) bone.scale.y = 1;
-          }, 150);
-        });
-      }
+      // Natural eye blinking
+      setBlinkTimer(prevTimer => {
+        // Random chance of blinking
+        const shouldBlink = Math.random() < 0.002 || prevTimer > 0;
+        
+        if (shouldBlink) {
+          const newTimer = prevTimer + 1;
+          const blinkDuration = 15; // frames
+          
+          if (eyeBones.length && newTimer <= blinkDuration) {
+            const blinkPhase = newTimer / blinkDuration;
+            
+            // Eyelid animation curve (down and up)
+            let eyeScale = 1;
+            if (blinkPhase < 0.5) {
+              // Closing eyes (first half)
+              eyeScale = 1 - (blinkPhase * 2);
+            } else {
+              // Opening eyes (second half)
+              eyeScale = (blinkPhase - 0.5) * 2;
+            }
+            
+            eyeBones.forEach(bone => {
+              bone.scale.y = Math.max(0.1, eyeScale);
+            });
+            
+            return newTimer;
+          }
+          
+          // Reset blink timer after completion
+          return 0;
+        }
+        
+        return 0;
+      });
     }
   });
 
@@ -441,6 +535,7 @@ function AvatarModel({
         <>
           <primitive object={gltf.scene} />
           
+          {/* Enhanced lighting for better visual appearance */}
           <ambientLight intensity={0.4} />
           <directionalLight
             position={[1, 1, 2]}
@@ -451,6 +546,14 @@ function AvatarModel({
             position={[0, 0.5, 1]} 
             intensity={0.5} 
             color="#e1e1ff"
+          />
+          <spotLight
+            position={[-1, 1, 2]}
+            angle={0.5}
+            penumbra={0.5}
+            intensity={0.3}
+            color="#a0a0ff"
+            castShadow
           />
         </>
       ) : (

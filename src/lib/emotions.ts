@@ -1,54 +1,113 @@
-
 import type { Emotion } from '../context/ChatContext';
 
 // Simple emotion detection from text
 export const detectEmotionFromText = (text: string): Emotion => {
-  const lowerText = text.toLowerCase();
+  const lowercaseText = text.toLowerCase();
   
-  // Simple keyword-based emotion detection
-  if (
-    lowerText.includes('happy') || 
-    lowerText.includes('glad') || 
-    lowerText.includes('joy') || 
-    lowerText.includes('excellent') ||
-    lowerText.includes('great') ||
-    lowerText.includes('😊') ||
-    lowerText.includes('😄')
-  ) {
-    return 'happy';
-  } else if (
-    lowerText.includes('sad') || 
-    lowerText.includes('sorry') || 
-    lowerText.includes('upset') || 
-    lowerText.includes('unhappy') ||
-    lowerText.includes('miss') ||
-    lowerText.includes('😢') ||
-    lowerText.includes('😔')
-  ) {
-    return 'sad';
-  } else if (
-    lowerText.includes('angry') || 
-    lowerText.includes('upset') || 
-    lowerText.includes('annoyed') || 
-    lowerText.includes('frustrated') ||
-    lowerText.includes('mad') ||
-    lowerText.includes('😡') ||
-    lowerText.includes('😠')
-  ) {
-    return 'angry';
-  } else if (
-    lowerText.includes('wow') || 
-    lowerText.includes('surprised') || 
-    lowerText.includes('amazing') || 
-    lowerText.includes('shocking') ||
-    lowerText.includes('unexpected') ||
-    lowerText.includes('😲') ||
-    lowerText.includes('😮')
-  ) {
-    return 'surprised';
+  // Enhanced emotion detection with more patterns and contextual analysis
+  
+  // Happy emotion patterns
+  const happyWords = [
+    'happy', 'joy', 'great', 'excellent', 'wonderful', 'amazing', 'love', 'awesome',
+    'delighted', 'pleased', 'thrilled', 'excited', 'fantastic', 'glad', 'smile', 'laugh',
+    'perfect', 'nice', 'good', 'yay', 'best', 'congrats', 'congratulations', 'win', 'winning'
+  ];
+  
+  // Sad emotion patterns
+  const sadWords = [
+    'sad', 'unhappy', 'upset', 'awful', 'terrible', 'horrible', 'disappointed', 'miserable',
+    'depressed', 'gloomy', 'sorry', 'regret', 'cry', 'tears', 'lost', 'miss', 'fail', 'failed',
+    'unfortunately', 'grief', 'heartbroken'
+  ];
+  
+  // Angry emotion patterns
+  const angryWords = [
+    'angry', 'mad', 'furious', 'annoyed', 'irritated', 'hate', 'anger', 'frustrated',
+    'rage', 'outrageous', 'unfair', 'unacceptable', 'damn', 'hell', 'stupid', 'ridiculous',
+    'absurd', 'worst', 'terrible', 'atrocious'
+  ];
+  
+  // Surprised emotion patterns
+  const surprisedWords = [
+    'surprised', 'shock', 'unexpected', 'wow', 'oh', 'whoa', 'unbelievable', 'astonished',
+    'amazed', 'astounded', 'startled', 'stunning', 'incredible', 'speechless', 'omg', 'what',
+    'serious', 'really', 'seriously', 'impossible'
+  ];
+  
+  // Count matches for each emotion
+  let happyScore = 0;
+  let sadScore = 0;
+  let angryScore = 0;
+  let surprisedScore = 0;
+  
+  // Check for matching words in text
+  happyWords.forEach(word => {
+    if (lowercaseText.includes(word)) {
+      happyScore += 1;
+      // Give more weight to stronger words
+      if (['love', 'amazing', 'excellent', 'fantastic', 'wonderful'].includes(word)) {
+        happyScore += 1;
+      }
+    }
+  });
+  
+  sadWords.forEach(word => {
+    if (lowercaseText.includes(word)) {
+      sadScore += 1;
+      // Give more weight to stronger words
+      if (['depressed', 'heartbroken', 'grief', 'miserable', 'terrible'].includes(word)) {
+        sadScore += 1;
+      }
+    }
+  });
+  
+  angryWords.forEach(word => {
+    if (lowercaseText.includes(word)) {
+      angryScore += 1;
+      // Give more weight to stronger words
+      if (['hate', 'furious', 'rage', 'outrageous', 'unacceptable'].includes(word)) {
+        angryScore += 1;
+      }
+    }
+  });
+  
+  surprisedWords.forEach(word => {
+    if (lowercaseText.includes(word)) {
+      surprisedScore += 1;
+      // Give more weight to stronger words
+      if (['wow', 'unbelievable', 'incredible', 'astounded', 'speechless'].includes(word)) {
+        surprisedScore += 1;
+      }
+    }
+  });
+  
+  // Check for emoticons and emoji
+  if (/[:;][\-']?[\)D]|😊|😀|😁|😄|🙂|😍|❤️|👍/.test(lowercaseText)) happyScore += 2;
+  if (/[:;][\-']?[\(]|😢|😭|😔|😞|☹️|💔/.test(lowercaseText)) sadScore += 2;
+  if (/>[:\-]?[\(]|😠|😡|🤬|👎|😤/.test(lowercaseText)) angryScore += 2;
+  if (/[:;][\-']?[oO]|😮|😲|😱|😵|🤯/.test(lowercaseText)) surprisedScore += 2;
+  
+  // Account for negations (e.g., "not happy")
+  if (/\b(not|no|never|isn't|aren't|wasn't|weren't|don't|doesn't|didn't)\b/.test(lowercaseText)) {
+    if (happyScore > 0) {
+      happyScore--;
+      sadScore++;
+    }
   }
   
-  return 'neutral';
+  // Check which emotion scored highest
+  const scores = [
+    { emotion: 'happy', score: happyScore },
+    { emotion: 'sad', score: sadScore },
+    { emotion: 'angry', score: angryScore },
+    { emotion: 'surprised', score: surprisedScore },
+  ];
+  
+  // Sort emotions by score
+  scores.sort((a, b) => b.score - a.score);
+  
+  // Return the emotion with highest score, or neutral if no strong emotions
+  return (scores[0].score > 0) ? scores[0].emotion as Emotion : 'neutral';
 };
 
 // Generate AI response based on user input and emotion
