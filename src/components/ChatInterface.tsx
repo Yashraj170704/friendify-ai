@@ -1,10 +1,9 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/context/ChatContext';
 import MessageBubble from './MessageBubble';
 import EmotionAnalyzer from './EmotionAnalyzer';
 import VoiceRecognition from './VoiceRecognition';
-import ThreeDAvatar from './ThreeDAvatar';
+import AI3DHead from './AI3DHead';
 import { Sparkles, Radio, Zap, Bot, Brain, History } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
@@ -33,13 +32,11 @@ const ChatInterface = () => {
     },
   });
   
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
     
-    // Speak the latest AI message if it's not the same as the last one
     const latestMessage = messages[messages.length - 1];
     if (latestMessage && 
         latestMessage.sender === 'ai' && 
@@ -48,10 +45,8 @@ const ChatInterface = () => {
       lastProcessedMessageRef.current = latestMessage.id;
       speak(latestMessage.content, latestMessage.emotion || 'neutral');
     }
-    
   }, [messages, speak]);
 
-  // Cleanup function to cancel speech when component unmounts
   useEffect(() => {
     return () => {
       cancel();
@@ -64,14 +59,12 @@ const ChatInterface = () => {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-150px)] overflow-y-auto custom-scrollbar">
-      {/* Left Column: Avatar and Context Memory */}
       <motion.div 
         className="lg:w-1/4 flex flex-col gap-4"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Avatar */}
         <div className="glass-panel p-4 rounded-2xl flex flex-col neo-glow tech-scanline">
           <motion.h2 
             className="text-xl font-medium mb-2 text-center text-white flex justify-center items-center"
@@ -84,13 +77,12 @@ const ChatInterface = () => {
           </motion.h2>
           
           <div className="flex-1 flex flex-col items-center justify-center">
-            <ThreeDAvatar 
-              emotion={aiEmotion} 
-              speaking={isSpeaking}
-              selectedAvatar={selectedAvatar}
-              onAvatarChange={setSelectedAvatar}
-              showAvatarSelector={true}
-            />
+            <div className="w-full max-w-[250px] aspect-square mx-auto rounded-full overflow-hidden">
+              <AI3DHead 
+                emotion={aiEmotion} 
+                speaking={isSpeaking}
+              />
+            </div>
             
             {isSpeaking && (
               <motion.div 
@@ -105,7 +97,6 @@ const ChatInterface = () => {
           </div>
         </div>
         
-        {/* Context Memory Panel */}
         <motion.div 
           className="glass-panel p-4 rounded-2xl neo-glow flex-1 flex flex-col"
           initial={{ opacity: 0 }}
@@ -160,14 +151,12 @@ const ChatInterface = () => {
         </motion.div>
       </motion.div>
       
-      {/* Middle Column: Chat Messages */}
       <motion.div 
         className="lg:w-1/2 flex flex-col gap-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        {/* Chat Messages */}
         <div className="glass-panel p-4 rounded-2xl flex-grow overflow-hidden flex flex-col neo-glow h-[calc(100vh-270px)]">
           <div className="flex-1 overflow-y-auto pr-2 pb-4 custom-scrollbar">
             {messages.length === 0 ? (
@@ -189,13 +178,11 @@ const ChatInterface = () => {
           </div>
         </div>
         
-        {/* Voice Recognition Controls */}
         <div className="glass-panel p-4 rounded-2xl neo-glow">
           <VoiceRecognition />
         </div>
       </motion.div>
       
-      {/* Right Column: Emotion Analyzer with Camera */}
       <motion.div 
         className="lg:w-1/4 glass-panel p-4 rounded-2xl neo-glow"
         initial={{ opacity: 0, x: 20 }}

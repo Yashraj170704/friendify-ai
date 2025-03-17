@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { ChatProvider } from '@/context/ChatContext';
 import ChatInterface from '@/components/ChatInterface';
@@ -7,6 +6,13 @@ import { toast } from 'sonner';
 import { Bot, Sparkles, Brain, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const keyframes = `
+@keyframes equalizer {
+  0%, 100% { height: 3px; }
+  50% { height: 15px; }
+}
+`;
+
 const Index = () => {
   useEffect(() => {
     // Welcome toast
@@ -14,6 +20,18 @@ const Index = () => {
       description: "Your empathetic AI friend is ready to chat with you!",
       duration: 5000,
     });
+    
+    // Add keyframes to document
+    const style = document.createElement('style');
+    style.innerHTML = keyframes;
+    document.head.appendChild(style);
+    
+    return () => {
+      // Cleanup
+      if (style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+    };
   }, []);
 
   return (
@@ -23,6 +41,7 @@ const Index = () => {
       
       {/* Content */}
       <div className="mx-auto relative z-10">
+        {/* Header */}
         <motion.header 
           className="mb-4"
           initial={{ opacity: 0, y: -20 }}
@@ -60,6 +79,7 @@ const Index = () => {
           </ChatProvider>
         </main>
         
+        {/* Footer */}
         <motion.footer 
           className="mt-6 text-center text-sm text-purple-300/60"
           initial={{ opacity: 0 }}
