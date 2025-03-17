@@ -197,7 +197,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
           {...headMaterial}
           roughness={0.1}
           metalness={0.9}
-          clearcoat: 0.8,
+          clearcoat={0.8}
         />
       </mesh>
       
@@ -314,7 +314,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
           color={getHeadColor()} 
           metalness={0.8} 
           roughness={0.2}
-          clearcoat: 0.5
+          clearcoat={0.5}
         />
       </mesh>
       
