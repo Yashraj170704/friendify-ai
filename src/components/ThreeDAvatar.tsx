@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
@@ -252,20 +251,15 @@ function SafeAvatarModel(props: {
   onError?: () => void;
   avatarId: string;
 }) {
-  // Instead of using try/catch inside the component function which can cause React hook issues,
-  // we use error state that gets updated only on first render or when props change
   const [hasError, setHasError] = useState(false);
   
-  // If we already know there's an error, render the fallback immediately
   if (hasError) {
     return <FallbackModel color="#9b87f5" scale={(props.scale || 3) / 3} emotion={props.emotion} />;
   }
   
-  // If no error yet, try to render the real model with error boundary
   try {
     return <AvatarModel {...props} onError={() => setHasError(true)} />;
   } catch (error) {
-    // This catch will only run on first render
     console.error("Error rendering avatar model:", error);
     return <FallbackModel color="#9b87f5" scale={(props.scale || 3) / 3} emotion={props.emotion} />;
   }
@@ -294,28 +288,22 @@ function AvatarModel({
   const groupRef = useRef<Group>(null);
   const [loaded, setLoaded] = useState(false);
   
-  // Use a separate try/catch for the GLTF loading to avoid React hook ordering issues
   let gltf: GLTFResult | null = null;
   try {
     gltf = useGLTF(modelPath) as GLTFResult;
   } catch (error) {
     console.error(`Error loading model ${modelPath}:`, error);
     if (onError) {
-      // Schedule this to run after the render to avoid React hook ordering issues
       setTimeout(onError, 0);
     }
-    // We'll return a simple fallback from the render below,
-    // This way we don't disrupt the hook order
   }
   
-  // If we have a valid GLTF, setup animations
   const { actions } = useAnimations(gltf?.animations || [], groupRef);
   
   useEffect(() => {
     if (gltf?.scene) {
       setLoaded(true);
       
-      // Start idle animation if available
       if (actions && actions.idle) {
         actions.idle.reset().fadeIn(0.5).play();
       }
@@ -328,11 +316,9 @@ function AvatarModel({
     };
   }, [gltf, actions]);
   
-  // Speaking animation and facial expressions
   useFrame((state) => {
     if (!groupRef.current) return;
     
-    // Add smooth head movement
     groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
     if (emotion === 'happy') {
       groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.5) * 0.05;
@@ -340,23 +326,19 @@ function AvatarModel({
       groupRef.current.rotation.x = -0.1 + Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
     }
     
-    // Only try to animate face parts if we have a valid model loaded
     if (gltf?.scene) {
-      // If speaking, animate mouth/jaw if available
       if (speaking && groupRef.current.children[0]?.children) {
         const jawBone = groupRef.current.children[0].children.find(
           child => child.name === 'jaw' || child.name.includes('mouth')
         );
         
         if (jawBone) {
-          // More natural speaking pattern with varied movement
           const openAmount = Math.sin(state.clock.elapsedTime * 15) * 0.15;
           const randomVariation = Math.sin(state.clock.elapsedTime * 7.3) * 0.05;
           jawBone.rotation.x = Math.max(0, openAmount + randomVariation);
         }
       }
       
-      // Emotion handling - could adjust facial bones based on emotion
       if (emotion !== 'neutral' && groupRef.current.children[0]?.children) {
         const eyeBrows = groupRef.current.children[0].children.filter(
           child => child.name.includes('eyebrow') || child.name.includes('brow')
@@ -370,7 +352,6 @@ function AvatarModel({
           child => child.name.includes('mouth_corner') || child.name.includes('lip_corner')
         );
         
-        // Apply emotion-specific facial animations
         switch (emotion) {
           case 'happy':
             eyeBrows.forEach(bone => {
@@ -380,7 +361,6 @@ function AvatarModel({
               bone.scale.y = 1.1;
             });
             mouthCorners.forEach((bone, index) => {
-              // Left corner up, right corner up
               bone.position.y += 0.02;
             });
             break;
@@ -388,13 +368,11 @@ function AvatarModel({
           case 'sad':
             eyeBrows.forEach(bone => {
               bone.rotation.x = 0.1;
-              // Inner eyebrows raised
               if (bone.name.includes('inner')) {
                 bone.position.y += 0.02;
               }
             });
             mouthCorners.forEach(bone => {
-              // Mouth corners down
               bone.position.y -= 0.02;
             });
             break;
@@ -402,12 +380,10 @@ function AvatarModel({
           case 'angry':
             eyeBrows.forEach(bone => {
               bone.rotation.x = 0.2;
-              // Bring brows together and down
               bone.position.y -= 0.02;
               bone.position.x += bone.name.includes('left') ? 0.02 : -0.02;
             });
             mouthCorners.forEach(bone => {
-              // Mouth corners slightly down
               bone.position.y -= 0.01;
             });
             break;
@@ -424,9 +400,11 @@ function AvatarModel({
         }
       }
       
-      // Blinking animation regardless of emotion
+      const eyeBones = groupRef.current.children[0]?.children.filter(
+        child => child.name.includes('eye')
+      ) || [];
+      
       if (eyeBones.length && Math.random() < 0.005) {
-        // Random blinking
         eyeBones.forEach(bone => {
           bone.scale.y = 0.1;
           setTimeout(() => {
@@ -437,18 +415,15 @@ function AvatarModel({
     }
   });
 
-  // Enhanced material settings for better visuals
   useEffect(() => {
     if (gltf?.scene) {
       gltf.scene.traverse((child) => {
         if (child instanceof THREE.Mesh && child.material) {
-          // Enhance materials for better visual quality
           if (child.material instanceof THREE.MeshStandardMaterial) {
             child.material.roughness = 0.3;
             child.material.metalness = 0.1;
             child.material.envMapIntensity = 1.2;
             
-            // Add subtle subsurface scattering effect for skin
             if (child.name.includes('skin') || child.name.includes('face')) {
               child.material.roughness = 0.2;
               child.castShadow = true;
@@ -466,7 +441,6 @@ function AvatarModel({
         <>
           <primitive object={gltf.scene} />
           
-          {/* Add environmental lighting for better visuals */}
           <ambientLight intensity={0.4} />
           <directionalLight
             position={[1, 1, 2]}
@@ -497,14 +471,13 @@ interface ThreeDAvatarProps {
 const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({ 
   emotion = 'neutral',
   speaking = false,
-  selectedAvatar = 'stylized_male', // Default to stylized male avatar
+  selectedAvatar = 'stylized_male',
   onAvatarChange,
   showAvatarSelector = false
 }) => {
   const selectedAvatarData = avatarOptions.find(avatar => avatar.id === selectedAvatar) || avatarOptions[0];
-  const [modelLoadFailed, setModelLoadFailed] = useState(true); // Default to true to show the image by default
+  const [modelLoadFailed, setModelLoadFailed] = useState(true);
   
-  // Always show the image fallback for now until 3D models are provided
   useEffect(() => {
     setModelLoadFailed(true);
   }, []);
@@ -549,7 +522,6 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
             </ErrorBoundary>
           )}
           
-          {/* Visual indicator for speaking state - enhanced version */}
           {speaking && (
             <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
               <motion.div
@@ -570,7 +542,6 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
             </div>
           )}
           
-          {/* Ambient glow effect */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0 rounded-full bg-gradient-radial from-purple-500/20 to-transparent opacity-50"></div>
           </div>
@@ -599,7 +570,6 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
   );
 };
 
-// Custom error boundary component to catch 3D rendering errors
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode },
   { hasError: boolean }
