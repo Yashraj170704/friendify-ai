@@ -148,36 +148,36 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
     }
   });
   
-  // Get main color based on emotion
+  // Get main color based on emotion - now using more natural face tones
   const getHeadColor = () => {
     switch (emotion) {
-      case 'happy': return new THREE.Color('#88c0f0');
-      case 'sad': return new THREE.Color('#7a92c2');
-      case 'angry': return new THREE.Color('#d88888');
-      case 'surprised': return new THREE.Color('#b69ee3');
-      default: return new THREE.Color('#7bafdb');
+      case 'happy': return new THREE.Color('#F5D0A9'); // Warm peachy tone
+      case 'sad': return new THREE.Color('#F0E2C4'); // Slightly pale tone
+      case 'angry': return new THREE.Color('#F5B7B1'); // Flushed reddish tone
+      case 'surprised': return new THREE.Color('#F0E2D5'); // Light natural tone
+      default: return new THREE.Color('#F2D2BD'); // Natural skin tone (default)
     }
   };
   
-  // Get secondary color (for facial features and details)
+  // Get secondary color (for facial features and details) - more natural tones
   const getSecondaryColor = () => {
     switch (emotion) {
-      case 'happy': return new THREE.Color('#5e9bcd');
-      case 'sad': return new THREE.Color('#5978ad');
-      case 'angry': return new THREE.Color('#b76b6b');
-      case 'surprised': return new THREE.Color('#9277c9');
-      default: return new THREE.Color('#5e9bcd');
+      case 'happy': return new THREE.Color('#E6B894'); // Warm tone
+      case 'sad': return new THREE.Color('#DACCB6'); // Cooler tone
+      case 'angry': return new THREE.Color('#E6A29A'); // Reddish tone
+      case 'surprised': return new THREE.Color('#E5D3C3'); // Lighter tone
+      default: return new THREE.Color('#E5C8B0'); // Natural secondary tone
     }
   };
   
-  // Mesh Distort Material for more organic look
+  // Mesh Distort Material for more organic look - adjusted for more natural face
   const headMaterial = {
     color: getHeadColor(),
-    roughness: 0.2,
-    metalness: 0.8,
-    clearcoat: 0.5,
-    clearcoatRoughness: 0.2,
-    envMapIntensity: 0.8
+    roughness: 0.6, // More skin-like
+    metalness: 0.1, // Less metallic, more like skin
+    clearcoat: 0.2, // Subtle sheen
+    clearcoatRoughness: 0.8, // More natural looking
+    envMapIntensity: 0.5 // Less reflective
   };
   
   return (
@@ -195,9 +195,9 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <sphereGeometry args={[0.95, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
         <meshPhysicalMaterial 
           {...headMaterial}
-          roughness={0.1}
-          metalness={0.9}
-          clearcoat={0.8}
+          roughness={0.5}
+          metalness={0.1}
+          clearcoat={0.3}
         />
       </mesh>
       
@@ -206,8 +206,8 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <sphereGeometry args={[0.3, 32, 32]} />
         <meshPhysicalMaterial 
           color={getSecondaryColor()}
-          roughness={0.3}
-          metalness={0.7}
+          roughness={0.7}
+          metalness={0.1}
         />
       </mesh>
       
@@ -215,8 +215,8 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <sphereGeometry args={[0.3, 32, 32]} />
         <meshPhysicalMaterial 
           color={getSecondaryColor()}
-          roughness={0.3}
-          metalness={0.7}
+          roughness={0.7}
+          metalness={0.1}
         />
       </mesh>
       
@@ -259,12 +259,12 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
       {/* Better eyebrows - shaped differently */}
       <mesh position={[-0.3, 0.55, 0.85]} scale={[0.25, 0.06, 0.06]} ref={leftEyebrowRef}>
         <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-        <meshStandardMaterial color="#333" />
+        <meshStandardMaterial color="#5E4B36" />
       </mesh>
       
       <mesh position={[0.3, 0.55, 0.85]} scale={[0.25, 0.06, 0.06]} ref={rightEyebrowRef}>
         <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-        <meshStandardMaterial color="#333" />
+        <meshStandardMaterial color="#5E4B36" />
       </mesh>
       
       {/* Improved mouth with better shape and texture */}
@@ -273,7 +273,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <mesh rotation={[0, Math.PI/2, 0]}>
           <capsuleGeometry args={[0.1, 0.8, 8, 16]} />
         </mesh>
-        <meshStandardMaterial color="#aa3333" roughness={0.3} />
+        <meshStandardMaterial color="#C74D49" roughness={0.3} />
       </mesh>
       
       {/* Improved jaw line */}
@@ -281,23 +281,23 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <sphereGeometry args={[0.5, 32, 32]} />
         <meshPhysicalMaterial 
           {...headMaterial}
-          roughness={0.2}
+          roughness={0.6}
         />
       </mesh>
       
       {/* Nose - subtle but adds dimension */}
       <mesh position={[0, -0.05, 1.05]} rotation={[Math.PI/4, 0, 0]}>
         <coneGeometry args={[0.08, 0.2, 16]} />
-        <meshStandardMaterial color={getHeadColor()} metalness={0.6} roughness={0.3} />
+        <meshStandardMaterial color={getHeadColor()} metalness={0.1} roughness={0.7} />
       </mesh>
       
-      {/* Ears - more organic shape */}
+      {/* Ears - more organic shape with skin tones */}
       <mesh position={[-1.0, 0, 0]} rotation={[0, 0, Math.PI/2]}>
         <capsuleGeometry args={[0.1, 0.3, 16, 16]} />
         <meshPhysicalMaterial 
           color={getHeadColor()} 
-          metalness={0.8}
-          roughness={0.2}
+          metalness={0.1}
+          roughness={0.7}
         />
       </mesh>
       
@@ -305,8 +305,8 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <capsuleGeometry args={[0.1, 0.3, 16, 16]} />
         <meshPhysicalMaterial 
           color={getHeadColor()} 
-          metalness={0.8}
-          roughness={0.2}
+          metalness={0.1}
+          roughness={0.7}
         />
       </mesh>
       
@@ -315,48 +315,50 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <sphereGeometry args={[0.5, 32, 32]}/>
         <meshPhysicalMaterial 
           color={getHeadColor()} 
-          metalness={0.8} 
-          roughness={0.2}
-          clearcoat={0.5}
+          metalness={0.1} 
+          roughness={0.6}
+          clearcoat={0.2}
         />
       </mesh>
       
-      {/* Subtle neck */}
+      {/* Subtle neck with skin tone */}
       <mesh position={[0, -1.0, 0]} rotation={[Math.PI/2, 0, 0]}>
         <cylinderGeometry args={[0.3, 0.5, 0.5, 32]} />
         <meshPhysicalMaterial 
           color={getHeadColor()} 
-          metalness={0.7}
-          roughness={0.3}
+          metalness={0.1}
+          roughness={0.6}
         />
       </mesh>
     </group>
   );
 };
 
-// Environment lighting - improved for better rendering
+// Environment lighting - improved for better rendering with skin tones
 const Lights = () => {
   return (
     <>
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.6} />
       <directionalLight 
         position={[5, 5, 5]} 
-        intensity={0.6} 
+        intensity={0.8} 
         castShadow 
         shadow-mapSize-width={1024} 
         shadow-mapSize-height={1024}
+        color="#fff5eb" // Warmer light
       />
       <spotLight 
         position={[0, 5, 5]} 
-        intensity={0.5} 
+        intensity={0.7} 
         angle={0.3} 
         penumbra={1} 
         castShadow
+        color="#fffaf0" // Slightly warmer light
       />
-      <pointLight position={[-5, -5, -5]} intensity={0.5} />
-      {/* Rim light for better edge definition */}
-      <pointLight position={[-2, 0, -5]} intensity={0.3} color="#8b5cf6" />
-      <pointLight position={[2, 0, -5]} intensity={0.3} color="#0ea5e9" />
+      <pointLight position={[-5, -5, -5]} intensity={0.5} color="#f0f8ff" /> // Cooler fill light
+      {/* Rim light for better edge definition - softer */}
+      <pointLight position={[-2, 0, -5]} intensity={0.2} color="#f5f5ff" />
+      <pointLight position={[2, 0, -5]} intensity={0.2} color="#fff5f0" />
     </>
   );
 };
@@ -444,4 +446,3 @@ const AI3DHead: React.FC<AI3DHeadProps> = ({ emotion, speaking }) => {
 };
 
 export default AI3DHead;
-
