@@ -269,7 +269,10 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
       
       {/* Improved mouth with better shape and texture */}
       <mesh position={[0, -0.28, 0.85]} scale={[0.4, 0.1, 0.1]} ref={mouthRef}>
-        <capsuleGeometry args={[0.1, 0.8, 8, 16]} rotation={[0, Math.PI/2, 0]} />
+        {/* Fix: Move rotation to the mesh level and remove from geometry */}
+        <mesh rotation={[0, Math.PI/2, 0]}>
+          <capsuleGeometry args={[0.1, 0.8, 8, 16]} />
+        </mesh>
         <meshStandardMaterial color="#aa3333" roughness={0.3} />
       </mesh>
       
