@@ -220,7 +220,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Left Eye - improved with better detail */}
+      {/* Left Eye - improved with better detail and no blue tint */}
       <mesh position={[-0.3, 0.2, 0.85]} ref={leftEyeRef}>
         <sphereGeometry args={[0.12, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
@@ -238,7 +238,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         </mesh>
       </mesh>
       
-      {/* Right Eye - improved with better detail */}
+      {/* Right Eye - improved with better detail and no blue tint */}
       <mesh position={[0.3, 0.2, 0.85]} ref={rightEyeRef}>
         <sphereGeometry args={[0.12, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
@@ -444,3 +444,4 @@ const AI3DHead: React.FC<AI3DHeadProps> = ({ emotion, speaking }) => {
 };
 
 export default AI3DHead;
+
