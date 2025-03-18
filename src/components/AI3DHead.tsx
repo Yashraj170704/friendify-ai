@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useHelper, MeshDistortMaterial, Sphere } from '@react-three/drei';
@@ -190,14 +189,13 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Completely redesigned face structure to remove goggle effect */}
-      <mesh position={[0, 0, 0.5]} castShadow ref={faceRef}>
-        {/* Using a much flatter face plate that doesn't extend over the eyes */}
+      {/* Solid face structure without transparency */}
+      <mesh position={[0, 0, 0.55]} castShadow ref={faceRef}>
         <sphereGeometry args={[0.95, 32, 16]} />
         <meshPhysicalMaterial 
           {...headMaterial}
-          transparent
-          opacity={0.9}
+          transparent={false}
+          opacity={1}
           roughness={0.3}
           metalness={0.1}
           clearcoat={0.4}
@@ -223,51 +221,40 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Left Eye - completely standalone from face structure */}
-      <mesh position={[-0.3, 0.2, 1.0]} ref={leftEyeRef}>
-        <sphereGeometry args={[0.14, 32, 32]} />
+      {/* Left Eye - smaller, more normal size */}
+      <mesh position={[-0.3, 0.2, 0.95]} ref={leftEyeRef}>
+        <sphereGeometry args={[0.1, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
         
         {/* Left Pupil */}
-        <mesh position={[0, 0, 0.08]}>
-          <sphereGeometry args={[0.08, 32, 32]} />
+        <mesh position={[0, 0, 0.06]}>
+          <sphereGeometry args={[0.06, 32, 32]} />
           <meshBasicMaterial color="#1a1a2e" />
           
           {/* Left Pupil Highlight */}
-          <mesh position={[0.02, 0.02, 0.03]} scale={0.7}>
-            <sphereGeometry args={[0.05, 16, 16]} />
+          <mesh position={[0.02, 0.02, 0.03]} scale={0.6}>
+            <sphereGeometry args={[0.04, 16, 16]} />
             <meshBasicMaterial color="white" />
           </mesh>
         </mesh>
       </mesh>
       
-      {/* Right Eye - completely standalone from face structure */}
-      <mesh position={[0.3, 0.2, 1.0]} ref={rightEyeRef}>
-        <sphereGeometry args={[0.14, 32, 32]} />
+      {/* Right Eye - smaller, more normal size */}
+      <mesh position={[0.3, 0.2, 0.95]} ref={rightEyeRef}>
+        <sphereGeometry args={[0.1, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
         
         {/* Right Pupil */}
-        <mesh position={[0, 0, 0.08]}>
-          <sphereGeometry args={[0.08, 32, 32]} />
+        <mesh position={[0, 0, 0.06]}>
+          <sphereGeometry args={[0.06, 32, 32]} />
           <meshBasicMaterial color="#1a1a2e" />
           
           {/* Right Pupil Highlight */}
-          <mesh position={[0.02, 0.02, 0.03]} scale={0.7}>
-            <sphereGeometry args={[0.05, 16, 16]} />
+          <mesh position={[0.02, 0.02, 0.03]} scale={0.6}>
+            <sphereGeometry args={[0.04, 16, 16]} />
             <meshBasicMaterial color="white" />
           </mesh>
         </mesh>
-      </mesh>
-      
-      {/* Eyebrows positioned well above eyes to avoid any overlap */}
-      <mesh position={[-0.3, 0.6, 0.95]} scale={[0.15, 0.01, 0.02]} ref={leftEyebrowRef}>
-        <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-        <meshStandardMaterial color="#4a4a6a" />
-      </mesh>
-      
-      <mesh position={[0.3, 0.6, 0.95]} scale={[0.15, 0.01, 0.02]} ref={rightEyebrowRef}>
-        <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-        <meshStandardMaterial color="#4a4a6a" />
       </mesh>
       
       {/* Improved mouth with better shape and texture */}
@@ -358,8 +345,8 @@ const Lights = () => {
         color="#fff"
       />
       <pointLight position={[-5, -5, -5]} intensity={0.5} color="#f0f8ff" />
-      {/* Much stronger front light to ensure eyes are fully visible and not obscured */}
-      <pointLight position={[0, 0, 3]} intensity={1.5} color="#ffffff" />
+      {/* Strong front light to ensure face is fully visible */}
+      <pointLight position={[0, 0, 3]} intensity={1.8} color="#ffffff" />
     </>
   );
 };
