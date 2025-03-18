@@ -148,18 +148,18 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
     }
   });
   
-  // Get main color based on emotion - now using more natural face tones
+  // Get main color based on emotion - more human skin tones
   const getHeadColor = () => {
     switch (emotion) {
-      case 'happy': return new THREE.Color('#F5D0A9'); // Warm peachy tone
-      case 'sad': return new THREE.Color('#F0E2C4'); // Slightly pale tone
-      case 'angry': return new THREE.Color('#F5B7B1'); // Flushed reddish tone
-      case 'surprised': return new THREE.Color('#F0E2D5'); // Light natural tone
+      case 'happy': return new THREE.Color('#F8D0B0'); // Warm healthy skin tone
+      case 'sad': return new THREE.Color('#E8D0C0'); // Slightly pale skin tone
+      case 'angry': return new THREE.Color('#F8C0B0'); // Flushed skin tone
+      case 'surprised': return new THREE.Color('#F0E0D0'); // Light skin tone
       default: return new THREE.Color('#F2D2BD'); // Natural skin tone (default)
     }
   };
   
-  // Get secondary color (for facial features and details) - more natural tones
+  // Get secondary color (for facial features and details)
   const getSecondaryColor = () => {
     switch (emotion) {
       case 'happy': return new THREE.Color('#E6B894'); // Warm tone
@@ -220,7 +220,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Left Eye - improved with better detail and no blue tint */}
+      {/* Left Eye - pure white with black pupil */}
       <mesh position={[-0.3, 0.2, 0.85]} ref={leftEyeRef}>
         <sphereGeometry args={[0.12, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
@@ -238,7 +238,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         </mesh>
       </mesh>
       
-      {/* Right Eye - improved with better detail and no blue tint */}
+      {/* Right Eye - pure white with black pupil */}
       <mesh position={[0.3, 0.2, 0.85]} ref={rightEyeRef}>
         <sphereGeometry args={[0.12, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
@@ -256,15 +256,15 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         </mesh>
       </mesh>
       
-      {/* Better eyebrows - shaped differently */}
-      <mesh position={[-0.3, 0.55, 0.85]} scale={[0.25, 0.06, 0.06]} ref={leftEyebrowRef}>
+      {/* Thinner, more subtle eyebrows that don't hide the face */}
+      <mesh position={[-0.3, 0.42, 0.85]} scale={[0.25, 0.03, 0.03]} ref={leftEyebrowRef}>
         <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-        <meshStandardMaterial color="#5E4B36" />
+        <meshStandardMaterial color="#6E5B46" />
       </mesh>
       
-      <mesh position={[0.3, 0.55, 0.85]} scale={[0.25, 0.06, 0.06]} ref={rightEyebrowRef}>
+      <mesh position={[0.3, 0.42, 0.85]} scale={[0.25, 0.03, 0.03]} ref={rightEyebrowRef}>
         <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
-        <meshStandardMaterial color="#5E4B36" />
+        <meshStandardMaterial color="#6E5B46" />
       </mesh>
       
       {/* Improved mouth with better shape and texture */}
@@ -273,7 +273,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         <mesh rotation={[0, Math.PI/2, 0]}>
           <capsuleGeometry args={[0.1, 0.8, 8, 16]} />
         </mesh>
-        <meshStandardMaterial color="#C74D49" roughness={0.3} />
+        <meshStandardMaterial color="#D06060" roughness={0.3} />
       </mesh>
       
       {/* Improved jaw line */}
@@ -285,7 +285,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Nose - subtle but adds dimension */}
+      {/* Nose - better defined nose */}
       <mesh position={[0, -0.05, 1.05]} rotation={[Math.PI/4, 0, 0]}>
         <coneGeometry args={[0.08, 0.2, 16]} />
         <meshStandardMaterial color={getHeadColor()} metalness={0.1} roughness={0.7} />
