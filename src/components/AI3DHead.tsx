@@ -219,56 +219,55 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Left Eye - completely visible, no covering */}
-      <mesh position={[-0.3, 0.2, 0.9]} ref={leftEyeRef}>
-        <sphereGeometry args={[0.12, 32, 32]} />
+      {/* Left Eye - positioned further forward with no coverings */}
+      <mesh position={[-0.3, 0.2, 0.95]} ref={leftEyeRef}>
+        <sphereGeometry args={[0.13, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
         
-        {/* Left Pupil */}
+        {/* Left Pupil - larger and more visible */}
         <mesh position={[0, 0, 0.08]}>
-          <sphereGeometry args={[0.06, 32, 32]} />
+          <sphereGeometry args={[0.07, 32, 32]} />
           <meshBasicMaterial color="#1a1a2e" />
           
-          {/* Left Pupil Highlight */}
-          <mesh position={[0.02, 0.02, 0.03]} scale={0.6}>
+          {/* Left Pupil Highlight - brighter */}
+          <mesh position={[0.02, 0.02, 0.03]} scale={0.7}>
             <sphereGeometry args={[0.04, 16, 16]} />
             <meshBasicMaterial color="white" />
           </mesh>
         </mesh>
       </mesh>
       
-      {/* Right Eye - completely visible, no covering */}
-      <mesh position={[0.3, 0.2, 0.9]} ref={rightEyeRef}>
-        <sphereGeometry args={[0.12, 32, 32]} />
+      {/* Right Eye - positioned further forward with no coverings */}
+      <mesh position={[0.3, 0.2, 0.95]} ref={rightEyeRef}>
+        <sphereGeometry args={[0.13, 32, 32]} />
         <meshStandardMaterial color="white" roughness={0.1} />
         
-        {/* Right Pupil */}
+        {/* Right Pupil - larger and more visible */}
         <mesh position={[0, 0, 0.08]}>
-          <sphereGeometry args={[0.06, 32, 32]} />
+          <sphereGeometry args={[0.07, 32, 32]} />
           <meshBasicMaterial color="#1a1a2e" />
           
-          {/* Right Pupil Highlight */}
-          <mesh position={[0.02, 0.02, 0.03]} scale={0.6}>
+          {/* Right Pupil Highlight - brighter */}
+          <mesh position={[0.02, 0.02, 0.03]} scale={0.7}>
             <sphereGeometry args={[0.04, 16, 16]} />
             <meshBasicMaterial color="white" />
           </mesh>
         </mesh>
       </mesh>
       
-      {/* Smaller, repositioned eyebrows that don't cover the face */}
-      <mesh position={[-0.3, 0.45, 0.9]} scale={[0.2, 0.02, 0.02]} ref={leftEyebrowRef}>
+      {/* Eyebrows moved higher and made smaller so they don't cover eyes */}
+      <mesh position={[-0.3, 0.55, 0.9]} scale={[0.15, 0.01, 0.02]} ref={leftEyebrowRef}>
         <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
         <meshStandardMaterial color="#4a4a6a" />
       </mesh>
       
-      <mesh position={[0.3, 0.45, 0.9]} scale={[0.2, 0.02, 0.02]} ref={rightEyebrowRef}>
+      <mesh position={[0.3, 0.55, 0.9]} scale={[0.15, 0.01, 0.02]} ref={rightEyebrowRef}>
         <boxGeometry args={[1, 1, 1, 3, 3, 3]} />
         <meshStandardMaterial color="#4a4a6a" />
       </mesh>
       
       {/* Improved mouth with better shape and texture */}
       <mesh position={[0, -0.28, 0.88]} scale={[0.4, 0.1, 0.1]} ref={mouthRef}>
-        {/* Fix: Move rotation to the mesh level and remove from geometry */}
         <mesh rotation={[0, Math.PI/2, 0]}>
           <capsuleGeometry args={[0.1, 0.8, 8, 16]} />
         </mesh>
@@ -333,7 +332,7 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
   );
 };
 
-// Improved lighting to better highlight the face
+// Improved lighting to better highlight the face and eyes
 const Lights = () => {
   return (
     <>
@@ -355,8 +354,8 @@ const Lights = () => {
         color="#fff"
       />
       <pointLight position={[-5, -5, -5]} intensity={0.5} color="#f0f8ff" />
-      {/* Front light to ensure face is well lit */}
-      <pointLight position={[0, 0, 2]} intensity={0.7} color="#ffffff" />
+      {/* Enhanced front light to ensure face and eyes are very well lit */}
+      <pointLight position={[0, 0, 3]} intensity={0.9} color="#ffffff" />
     </>
   );
 };
