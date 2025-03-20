@@ -189,18 +189,6 @@ const Head = ({ emotion, speaking }: { emotion: Emotion; speaking: boolean }) =>
         />
       </mesh>
       
-      {/* Solid face structure without transparency */}
-      <mesh position={[0, 0, 0.55]} castShadow ref={faceRef}>
-        <sphereGeometry args={[0.95, 32, 16]} />
-        <meshPhysicalMaterial 
-          {...headMaterial}
-          transparent={false}
-          opacity={1}
-          roughness={0.3}
-          metalness={0.1}
-          clearcoat={0.4}
-        />
-      </mesh>
       
       {/* Cheeks for more natural face shape */}
       <mesh position={[-0.5, -0.2, 0.6]} castShadow>
